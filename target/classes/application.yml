@@ -1,0 +1,60 @@
+# ==================== 通用配置 ====================
+spring:
+  application:
+    name: typetype-server
+
+  # 数据源配置（MySQL）
+  datasource:
+    url: jdbc:mysql://localhost:3306/typetype?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: whynu
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # Flyway 数据库迁移配置
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+# MyBatis 配置
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.typetype.*.entity
+  configuration:
+    map-underscore-to-camel-case: true # 数据库下划线命名转 Java 驼峰命名
+
+# 服务器配置
+server:
+  port: 8080
+  servlet:
+    context-path: /
+  # 禁用 favicon.ico 请求处理
+  favicon:
+    enabled: false
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.typetype: DEBUG
+    org.springframework.security: DEBUG
+
+# ==================== JWT 配置 ====================
+jwt:
+  # JWT 签名密钥（从环境变量读取，默认值用于开发环境）
+  secret-key: ${JWT_SECRET_KEY:typetype-secret-key-change-in-production-2026}
+
+  # Access Token 过期时间（秒），15 分钟
+  access-token-expire: 900
+
+  # Refresh Token 过期时间（秒），7 天
+  refresh-token-expire: 604800
+
+  # Token 签发者
+  issuer: typetype-server
+
+  # HTTP Header 名称
+  header-name: Authorization
+
+  # Token 前缀
+  token-prefix: "Bearer "

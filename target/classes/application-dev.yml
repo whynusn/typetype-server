@@ -1,0 +1,23 @@
+# ==================== 开发环境配置 ====================
+spring:
+  # 激活 dev profile
+  profiles:
+    active: dev
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/typetype?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: whynu
+
+  # 开发环境热部署开关（由 spring-boot-devtools 自动处理）
+  devtools:
+    restart:
+      enabled: true
+
+# 日志配置（开发环境更详细）
+logging:
+  level:
+    root: INFO
+    com.typetype: DEBUG
+    org.springframework: DEBUG
+    org.springframework.security: DEBUG

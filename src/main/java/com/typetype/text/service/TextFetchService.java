@@ -26,23 +26,24 @@ public class TextFetchService {
 
     public Text saveText(Long sourceId, FetchedTextDTO fetched) {
         // Check if already exists by sourceId + title
-        Text existing = textMapper.findBySourceIdAndTitle(sourceId, fetched.getTitle());
+        String title = fetched.getTitle() != null ? fetched.getTitle() : "极速杯 - 自动抓取";
+        Text existing = textMapper.findBySourceIdAndTitle(sourceId, title);
         if (existing != null) {
             log.info("Text already exists with title '{}', returning existing id={}",
-                    fetched.getTitle(), existing.getId());
+                    title, existing.getId());
             return existing;
         }
 
         Text text = new Text();
         text.setSourceId(sourceId);
-        text.setTitle(fetched.getTitle());
+        text.setTitle(title);
         text.setContent(fetched.getContent());
         text.setCharCount(fetched.getContent().length());
         text.setDifficulty(0);
 
         textMapper.insert(text);
         log.info("Saved new text from SaiWen: id={}, title='{}', charCount={}",
-                text.getId(), fetched.getTitle(), fetched.getContent().length());
+                text.getId(), title, fetched.getContent().length());
         return text;
     }
 
