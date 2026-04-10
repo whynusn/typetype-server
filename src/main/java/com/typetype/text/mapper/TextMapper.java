@@ -20,13 +20,13 @@ public interface TextMapper {
     @Select("SELECT * FROM t_text WHERE source_id = #{sourceId} ORDER BY RAND() LIMIT 1")
     Text findRandomBySourceId(Long sourceId);
 
-    @Select("SELECT * FROM t_text WHERE source_id = #{sourceId} ORDER BY created_at LIMIT 1")
+    @Select("SELECT * FROM t_text WHERE source_id = #{sourceId} ORDER BY created_at DESC LIMIT 1")
     Text findLatestBySourceId(Long sourceId);
 
     @Insert("INSERT INTO t_text (source_id, title, content, char_count, difficulty) " +
             "VALUES (#{sourceId}, #{title}, #{content}, #{charCount}, #{difficulty})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
-    int insert(Text text);
+    void insert(Text text);
 
     @Select("SELECT * FROM t_text WHERE source_id = #{sourceId} AND title = #{title} LIMIT 1")
     Text findBySourceIdAndTitle(Long sourceId, String title);
