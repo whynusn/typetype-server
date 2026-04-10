@@ -30,4 +30,7 @@ public interface TextMapper {
 
     @Select("SELECT * FROM t_text WHERE source_id = #{sourceId} AND title = #{title} LIMIT 1")
     Text findBySourceIdAndTitle(Long sourceId, String title);
+
+    @Select("SELECT * FROM t_text WHERE source_id = #{sourceId} AND content = #{content} LIMIT 1")
+    Text findBySourceIdAndContent(Long sourceId, String content);
 }

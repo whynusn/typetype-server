@@ -1,6 +1,7 @@
 package com.typetype.text.controller;
 
 import com.typetype.common.result.Result;
+import com.typetype.text.dto.UploadTextDTO;
 import com.typetype.text.entity.Text;
 import com.typetype.text.entity.TextSource;
 import com.typetype.text.service.TextService;
@@ -38,5 +39,11 @@ public class TextController {
     public Result<Text> getTextById(@PathVariable Long id) {
         Text data = textService.getTextEntityById(id);
         return Result.success(data);
+    }
+
+    @PostMapping("/upload")
+    public Result<Text> uploadText(@RequestBody UploadTextDTO dto) {
+        Text text = textService.uploadText(dto);
+        return Result.success(text);
     }
 }

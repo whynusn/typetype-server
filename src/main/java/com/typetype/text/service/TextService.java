@@ -3,6 +3,7 @@ package com.typetype.text.service;
 import com.typetype.common.exception.BusinessException;
 import com.typetype.common.result.ResultCode;
 import com.typetype.text.dto.FetchedTextDTO;
+import com.typetype.text.dto.UploadTextDTO;
 import com.typetype.text.entity.Text;
 import com.typetype.text.entity.TextSource;
 import com.typetype.text.mapper.TextMapper;
@@ -75,6 +76,35 @@ public class TextService {
 
         Text newText = textFetchService.saveText(source.getId(), fetched);
         return newText != null ? newText : text;
+    }
+
+    public Text uploadText(UploadTextDTO dto) {
+        TextSource customSource = textSourceMapper.findCustomSource();
+        if (customSource == null) {
+            customSource = new TextSource();
+            customSource.setSourceKey("custom");
+            customSource.setLabel("自定义文本");
+            customSource.setCategory("custom");
+            customSource.setIsActive(true);
+            textSourceMapper.insert(customSource);
+        }
+
+        if (dto.getContent() != null) {
+            Text existing = textMapper.findBySourceIdAndContent(customSource.getId(), dto.getContent());
+            if (existing != null) {
+                return existing;
+            }
+        }
+
+        Text text = new Text();
+        text.setSourceId(customSource.getId());
+        text.setTitle(dto.getTitle() != null ? dto.getTitle() : "自定义文本");
+        text.setContent(dto.getContent());
+        text.setCharCount(dto.getContent() != null ? dto.getContent().length() : 0);
+        text.setDifficulty(0);
+        textMapper.insert(text);
+
+        return text;
     }
 
     private TextSource validateSource(String sourceKey) {

@@ -2,6 +2,7 @@ package com.typetype.text.mapper;
 
 import com.typetype.text.entity.TextSource;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
@@ -14,4 +15,10 @@ public interface TextSourceMapper {
 
     @Select("SELECT * FROM t_text_source WHERE source_key = #{sourceKey}")
     TextSource findBySourceKey(String sourceKey);
+
+    @Select("SELECT * FROM t_text_source WHERE source_key = 'custom' AND category = 'custom'")
+    TextSource findCustomSource();
+
+    @Options(useGeneratedKeys = true, keyProperty = "id")
+    int insert(TextSource textSource);
 }
