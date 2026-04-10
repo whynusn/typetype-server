@@ -23,8 +23,8 @@ public interface TextMapper {
     @Select("SELECT * FROM t_text WHERE source_id = #{sourceId} ORDER BY created_at DESC LIMIT 1")
     Text findLatestBySourceId(Long sourceId);
 
-    @Insert("INSERT INTO t_text (source_id, title, content, char_count, difficulty) " +
-            "VALUES (#{sourceId}, #{title}, #{content}, #{charCount}, #{difficulty})")
+    @Insert("INSERT INTO t_text (source_id, title, content, char_count, difficulty, client_text_id) " +
+            "VALUES (#{sourceId}, #{title}, #{content}, #{charCount}, #{difficulty}, #{clientTextId})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     void insert(Text text);
 
@@ -33,4 +33,7 @@ public interface TextMapper {
 
     @Select("SELECT * FROM t_text WHERE source_id = #{sourceId} AND content = #{content} LIMIT 1")
     Text findBySourceIdAndContent(Long sourceId, String content);
+
+    @Select("SELECT * FROM t_text WHERE client_text_id = #{clientTextId} LIMIT 1")
+    Text findByClientTextId(Long clientTextId);
 }

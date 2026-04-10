@@ -11,15 +11,24 @@ import java.math.BigDecimal;
  * 🎓 学习点：
  * - @NotNull/@DecimalMin 等校验注解配合 @Valid 使用
  * - BigDecimal 用于精确数值类型
+ *
+ * 💡 textId 与 clientTextId：
+ * - textId: 服务器数据库主键 ID
+ * - clientTextId: 客户端生成的 hash ID
+ * - 至少提供一个，优先使用 textId
  */
 @Data
 public class SubmitScoreDTO {
 
     /**
-     * 文本ID
+     * 文本ID（服务器主键）
      */
-    @NotNull(message = "文本ID不能为空")
     private Long textId;
+
+    /**
+     * 客户端文本ID（hash值）
+     */
+    private Long clientTextId;
 
     /**
      * 速度（字/分）

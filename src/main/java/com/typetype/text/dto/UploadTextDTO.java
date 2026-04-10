@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class UploadTextDTO {
-    private Long textId;
+    private Long clientTextId;
     private String title;
     private String content;
 }

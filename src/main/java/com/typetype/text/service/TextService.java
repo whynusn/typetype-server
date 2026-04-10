@@ -79,6 +79,16 @@ public class TextService {
     }
 
     public Text uploadText(UploadTextDTO dto) {
+        // 按 clientTextId 去重
+        if (dto.getClientTextId() != null) {
+            Text existing = textMapper.findByClientTextId(dto.getClientTextId());
+            if (existing != null) {
+                log.info("文本已存在: clientTextId={}", dto.getClientTextId());
+                return existing;
+            }
+        }
+
+        // 确保 custom source 存在
         TextSource customSource = textSourceMapper.findCustomSource();
         if (customSource == null) {
             customSource = new TextSource();
@@ -89,21 +99,16 @@ public class TextService {
             textSourceMapper.insert(customSource);
         }
 
-        if (dto.getContent() != null) {
-            Text existing = textMapper.findBySourceIdAndContent(customSource.getId(), dto.getContent());
-            if (existing != null) {
-                return existing;
-            }
-        }
-
         Text text = new Text();
         text.setSourceId(customSource.getId());
         text.setTitle(dto.getTitle() != null ? dto.getTitle() : "自定义文本");
         text.setContent(dto.getContent());
         text.setCharCount(dto.getContent() != null ? dto.getContent().length() : 0);
         text.setDifficulty(0);
+        text.setClientTextId(dto.getClientTextId());
         textMapper.insert(text);
 
+        log.info("上传文本成功: id={}, clientTextId={}", text.getId(), text.getClientTextId());
         return text;
     }
 

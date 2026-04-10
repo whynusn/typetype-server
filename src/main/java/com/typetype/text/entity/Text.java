@@ -56,6 +56,11 @@ public class Text {
     private Integer difficulty;
 
     /**
+     * 客户端文本ID（hash值，由客户端基于 label + content 生成）
+     */
+    private Long clientTextId;
+
+    /**
      * 创建时间
      */
     private LocalDateTime createdAt;

@@ -39,17 +39,18 @@ public class ScoreService {
      * @param dto 成绩数据
      */
     public void submitScore(SubmitScoreDTO dto) {
-        // 校验文本存在
-        Text text = textMapper.findById(dto.getTextId());
+        // 查找文本：优先 textId，其次 clientTextId
+        Text text = findText(dto);
         if (text == null) {
             throw new BusinessException(ResultCode.NOT_FOUND, "文本不存在");
         }
 
         Long userId = SecurityUtils.getCurrentUserId();
+        Long textId = text.getId();
 
         Score score = Score.builder()
             .userId(userId)
-            .textId(dto.getTextId())
+            .textId(textId)
             .speed(dto.getSpeed())
             .effectiveSpeed(dto.getEffectiveSpeed())
             .keyStroke(dto.getKeyStroke())
@@ -61,7 +62,20 @@ public class ScoreService {
             .build();
 
         scoreMapper.insert(score);
-        log.info("用户 {} 提交成绩成功，文本ID: {}, 速度: {}", userId, dto.getTextId(), dto.getSpeed());
+        log.info("用户 {} 提交成绩成功，文本ID: {}, 速度: {}", userId, textId, dto.getSpeed());
+    }
+
+    /**
+     * 查找文本：优先按 textId，其次按 clientTextId
+     */
+    private Text findText(SubmitScoreDTO dto) {
+        if (dto.getTextId() != null) {
+            return textMapper.findById(dto.getTextId());
+        }
+        if (dto.getClientTextId() != null) {
+            return textMapper.findByClientTextId(dto.getClientTextId());
+        }
+        return null;
     }
 
     /**
