@@ -66,14 +66,20 @@ public class ScoreService {
     }
 
     /**
-     * 查找文本：优先按 textId，其次按 clientTextId
+     * 查找文本：优先按 clientTextId，其次按 textId
+     *
+     * - clientTextId: 客户端生成的 hash ID，本地文本使用
+     * - textId: 服务器数据库主键 ID，服务器文本使用
      */
     private Text findText(SubmitScoreDTO dto) {
+        if (dto.getClientTextId() != null) {
+            Text text = textMapper.findByClientTextId(dto.getClientTextId());
+            if (text != null) {
+                return text;
+            }
+        }
         if (dto.getTextId() != null) {
             return textMapper.findById(dto.getTextId());
-        }
-        if (dto.getClientTextId() != null) {
-            return textMapper.findByClientTextId(dto.getClientTextId());
         }
         return null;
     }
