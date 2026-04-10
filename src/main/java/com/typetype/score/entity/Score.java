@@ -90,4 +90,9 @@ public class Score {
      * 创建时间
      */
     private LocalDateTime createdAt;
+
+    /**
+     * 文本标题（关联查询字段，非数据库字段）
+     */
+    private String textTitle;
 }
