@@ -11,6 +11,7 @@ import com.typetype.score.entity.Score;
 import com.typetype.score.mapper.ScoreMapper;
 import com.typetype.text.entity.Text;
 import com.typetype.text.mapper.TextMapper;
+import com.typetype.text.service.TextService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,7 @@ public class ScoreService {
 
     private final ScoreMapper scoreMapper;
     private final TextMapper textMapper;
+    private final TextService textService;
 
     /**
      * 提交成绩
@@ -39,8 +41,8 @@ public class ScoreService {
      * @param dto 成绩数据
      */
     public void submitScore(SubmitScoreDTO dto) {
-        // 查找文本：优先 textId，其次 clientTextId
-        Text text = findText(dto);
+        // 一站式查找或创建文本
+        Text text = findOrCreateText(dto);
         if (text == null) {
             throw new BusinessException(ResultCode.NOT_FOUND, "文本不存在");
         }
@@ -66,20 +68,28 @@ public class ScoreService {
     }
 
     /**
-     * 查找文本：优先按 clientTextId，其次按 textId
-     *
-     * - clientTextId: 客户端生成的 hash ID，本地文本使用
-     * - textId: 服务器数据库主键 ID，服务器文本使用
+     * 一站式查找或创建文本：
+     * 1. 按 clientTextId 查找（兼容已有数据）
+     * 2. 按 textId 查找（兼容已有数据）
+     * 3. 如果提供了 textContent，服务端 findOrCreate
      */
-    private Text findText(SubmitScoreDTO dto) {
+    private Text findOrCreateText(SubmitScoreDTO dto) {
+        // 1. 按 clientTextId 查找（兼容已有数据）
         if (dto.getClientTextId() != null) {
             Text text = textMapper.findByClientTextId(dto.getClientTextId());
-            if (text != null) {
-                return text;
-            }
+            if (text != null) return text;
         }
+        // 2. 按 textId 查找（兼容已有数据）
         if (dto.getTextId() != null) {
-            return textMapper.findById(dto.getTextId());
+            Text text = textMapper.findById(dto.getTextId());
+            if (text != null) return text;
+        }
+        // 3. 新逻辑：如果提供了 textContent，服务端一站式 findOrCreate
+        if (dto.getTextContent() != null && !dto.getTextContent().isBlank()) {
+            return textService.findOrCreateByTextContent(
+                dto.getTextContent(),
+                dto.getSourceKey()
+            );
         }
         return null;
     }

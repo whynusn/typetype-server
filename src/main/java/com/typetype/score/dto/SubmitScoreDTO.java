@@ -31,6 +31,16 @@ public class SubmitScoreDTO {
     private Long clientTextId;
 
     /**
+     * 文本内容（可选，用于服务端一站式 findOrCreate）
+     */
+    private String textContent;
+
+    /**
+     * 文本来源 key（可选，用于服务端一站式 findOrCreate）
+     */
+    private String sourceKey;
+
+    /**
      * 速度（字/分）
      */
     @NotNull(message = "速度不能为空")
