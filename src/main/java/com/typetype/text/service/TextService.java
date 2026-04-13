@@ -71,10 +71,13 @@ public class TextService {
             result.setContent(fetched.getContent());
             result.setCharCount(fetched.getContent().length());
             result.setDifficulty(0);
+            // 计算 clientTextId
+            long clientTextId = TextFetchService.calculateClientTextId(sourceKey, fetched.getContent());
+            result.setClientTextId(clientTextId);
             return result;
         }
 
-        Text newText = textFetchService.saveText(source.getId(), fetched);
+        Text newText = textFetchService.saveText(source.getId(), sourceKey, fetched);
         return newText != null ? newText : text;
     }
 
@@ -88,19 +91,26 @@ public class TextService {
             }
         }
 
-        // 确保 custom source 存在
-        TextSource customSource = textSourceMapper.findCustomSource();
-        if (customSource == null) {
-            customSource = new TextSource();
-            customSource.setSourceKey("custom");
-            customSource.setLabel("自定义文本");
-            customSource.setCategory("custom");
-            customSource.setIsActive(true);
-            textSourceMapper.insert(customSource);
+        // 根据 sourceKey 确定来源
+        TextSource source;
+        String sourceKey = dto.getSourceKey();
+        boolean hasValidSpecifiedSource = sourceKey != null && !sourceKey.isBlank() && !"custom".equals(sourceKey);
+
+        if (hasValidSpecifiedSource) {
+            // 使用客户端指定的来源
+            source = textSourceMapper.findBySourceKey(sourceKey);
+            if (source == null || !Boolean.TRUE.equals(source.getIsActive())) {
+                // 指定来源不存在或已禁用，回退到 custom
+                log.warn("指定来源不存在或已禁用: sourceKey={}, 回退到 custom", sourceKey);
+                source = getOrCreateCustomSource();
+            }
+        } else {
+            // 未指定有效来源，使用 custom
+            source = getOrCreateCustomSource();
         }
 
         Text text = new Text();
-        text.setSourceId(customSource.getId());
+        text.setSourceId(source.getId());
         text.setTitle(dto.getTitle() != null ? dto.getTitle() : "自定义文本");
         text.setContent(dto.getContent());
         text.setCharCount(dto.getContent() != null ? dto.getContent().length() : 0);
@@ -108,8 +118,24 @@ public class TextService {
         text.setClientTextId(dto.getClientTextId());
         textMapper.insert(text);
 
-        log.info("上传文本成功: id={}, clientTextId={}", text.getId(), text.getClientTextId());
+        log.info("上传文本成功: id={}, clientTextId={}, sourceKey={}", text.getId(), text.getClientTextId(), source.getSourceKey());
         return text;
+    }
+
+    /**
+     * 获取或创建 custom 来源
+     */
+    private TextSource getOrCreateCustomSource() {
+        TextSource source = textSourceMapper.findCustomSource();
+        if (source == null) {
+            source = new TextSource();
+            source.setSourceKey("custom");
+            source.setLabel("自定义文本");
+            source.setCategory("custom");
+            source.setIsActive(true);
+            textSourceMapper.insert(source);
+        }
+        return source;
     }
 
     private TextSource validateSource(String sourceKey) {

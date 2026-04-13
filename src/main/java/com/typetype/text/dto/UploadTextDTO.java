@@ -7,4 +7,5 @@ public class UploadTextDTO {
     private Long clientTextId;
     private String title;
     private String content;
+    private String sourceKey;
 }
