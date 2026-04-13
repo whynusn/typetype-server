@@ -123,41 +123,6 @@ public class TextService {
     }
 
     /**
-     * 服务端一站式查找或创建文本（供 ScoreService 调用）。
-     *
-     * @param content 文本内容
-     * @param sourceKey 文本来源 key（可选，默认 "custom"）
-     * @return 找到或创建的文本
-     */
-    public Text findOrCreateByTextContent(String content, String sourceKey) {
-        // 计算 clientTextId（服务端统一算，算法不再需要前后端一致）
-        String effectiveSourceKey = (sourceKey != null && !sourceKey.isBlank())
-            ? sourceKey : "custom";
-        long clientTextId = TextFetchService.calculateClientTextId(effectiveSourceKey, content);
-
-        // 按 clientTextId 查找
-        Text existing = textMapper.findByClientTextId(clientTextId);
-        if (existing != null) return existing;
-
-        // 查找或创建来源
-        TextSource source = getOrCreateSource(effectiveSourceKey);
-
-        // 创建文本
-        Text text = new Text();
-        text.setSourceId(source.getId());
-        text.setTitle(effectiveSourceKey.equals("custom") ? "自定义文本" : effectiveSourceKey);
-        text.setContent(content);
-        text.setCharCount(content.length());
-        text.setDifficulty(0);
-        text.setClientTextId(clientTextId);
-        textMapper.insert(text);
-
-        log.info("findOrCreate: id={}, clientTextId={}, sourceKey={}",
-                 text.getId(), clientTextId, effectiveSourceKey);
-        return text;
-    }
-
-    /**
      * 查找或创建文本来源。
      * 未知来源回退到 custom。
      */

@@ -12,10 +12,7 @@ import java.math.BigDecimal;
  * - @NotNull/@DecimalMin 等校验注解配合 @Valid 使用
  * - BigDecimal 用于精确数值类型
  *
- * 💡 textId 与 clientTextId：
- * - textId: 服务器数据库主键 ID
- * - clientTextId: 客户端生成的 hash ID
- * - 至少提供一个，优先使用 textId
+ * 只有服务端存在的文本才能提交成绩，因此只需要 textId
  */
 @Data
 public class SubmitScoreDTO {
@@ -24,21 +21,6 @@ public class SubmitScoreDTO {
      * 文本ID（服务器主键）
      */
     private Long textId;
-
-    /**
-     * 客户端文本ID（hash值）
-     */
-    private Long clientTextId;
-
-    /**
-     * 文本内容（可选，用于服务端一站式 findOrCreate）
-     */
-    private String textContent;
-
-    /**
-     * 文本来源 key（可选，用于服务端一站式 findOrCreate）
-     */
-    private String sourceKey;
 
     /**
      * 速度（字/分）

@@ -41,8 +41,11 @@ public class ScoreService {
      * @param dto 成绩数据
      */
     public void submitScore(SubmitScoreDTO dto) {
-        // 一站式查找或创建文本
-        Text text = findOrCreateText(dto);
+        // 只有服务端存在的文本才能提交成绩
+        if (dto.getTextId() == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "文本ID不能为空");
+        }
+        Text text = textMapper.findById(dto.getTextId());
         if (text == null) {
             throw new BusinessException(ResultCode.NOT_FOUND, "文本不存在");
         }
@@ -65,33 +68,6 @@ public class ScoreService {
 
         scoreMapper.insert(score);
         log.info("用户 {} 提交成绩成功，文本ID: {}, 速度: {}", userId, textId, dto.getSpeed());
-    }
-
-    /**
-     * 一站式查找或创建文本：
-     * 1. 按 clientTextId 查找（兼容已有数据）
-     * 2. 按 textId 查找（兼容已有数据）
-     * 3. 如果提供了 textContent，服务端 findOrCreate
-     */
-    private Text findOrCreateText(SubmitScoreDTO dto) {
-        // 1. 按 clientTextId 查找（兼容已有数据）
-        if (dto.getClientTextId() != null) {
-            Text text = textMapper.findByClientTextId(dto.getClientTextId());
-            if (text != null) return text;
-        }
-        // 2. 按 textId 查找（兼容已有数据）
-        if (dto.getTextId() != null) {
-            Text text = textMapper.findById(dto.getTextId());
-            if (text != null) return text;
-        }
-        // 3. 新逻辑：如果提供了 textContent，服务端一站式 findOrCreate
-        if (dto.getTextContent() != null && !dto.getTextContent().isBlank()) {
-            return textService.findOrCreateByTextContent(
-                dto.getTextContent(),
-                dto.getSourceKey()
-            );
-        }
-        return null;
     }
 
     /**
