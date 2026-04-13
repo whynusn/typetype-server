@@ -6,6 +6,7 @@ import com.typetype.text.entity.Text;
 import com.typetype.text.entity.TextSource;
 import com.typetype.text.service.TextService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -47,6 +48,7 @@ public class TextController {
         return Result.success(text);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/upload")
     public Result<Text> uploadText(@RequestBody UploadTextDTO dto) {
         Text text = textService.uploadText(dto);
