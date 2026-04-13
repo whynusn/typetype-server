@@ -41,6 +41,12 @@ public class TextController {
         return Result.success(data);
     }
 
+    @GetMapping("/by-client-text-id/{clientTextId}")
+    public Result<Text> getTextByClientTextId(@PathVariable Long clientTextId) {
+        Text text = textService.getByClientTextId(clientTextId);
+        return Result.success(text);
+    }
+
     @PostMapping("/upload")
     public Result<Text> uploadText(@RequestBody UploadTextDTO dto) {
         Text text = textService.uploadText(dto);

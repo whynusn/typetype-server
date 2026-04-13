@@ -81,6 +81,14 @@ public class TextService {
         return newText != null ? newText : text;
     }
 
+    public Text getByClientTextId(Long clientTextId) {
+        Text text = textMapper.findByClientTextId(clientTextId);
+        if (text == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "文本不存在");
+        }
+        return text;
+    }
+
     public Text uploadText(UploadTextDTO dto) {
         // 按 clientTextId 去重
         if (dto.getClientTextId() != null) {
