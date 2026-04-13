@@ -90,15 +90,6 @@ public class TextService {
     }
 
     public Text uploadText(UploadTextDTO dto) {
-        // 按 clientTextId 去重
-        if (dto.getClientTextId() != null) {
-            Text existing = textMapper.findByClientTextId(dto.getClientTextId());
-            if (existing != null) {
-                log.info("文本已存在: clientTextId={}", dto.getClientTextId());
-                return existing;
-            }
-        }
-
         // 根据 sourceKey 确定来源
         TextSource source;
         String sourceKey = dto.getSourceKey();
@@ -111,10 +102,22 @@ public class TextService {
                 // 指定来源不存在或已禁用，回退到 custom
                 log.warn("指定来源不存在或已禁用: sourceKey={}, 回退到 custom", sourceKey);
                 source = getOrCreateCustomSource();
+                sourceKey = "custom";
             }
         } else {
             // 未指定有效来源，使用 custom
             source = getOrCreateCustomSource();
+            sourceKey = "custom";
+        }
+
+        // 服务端统一计算 clientTextId（算法与客户端一致）
+        long clientTextId = TextFetchService.calculateClientTextId(sourceKey, dto.getContent());
+
+        // 按 clientTextId 去重
+        Text existing = textMapper.findByClientTextId(clientTextId);
+        if (existing != null) {
+            log.info("文本已存在: clientTextId={}, id={}", clientTextId, existing.getId());
+            return existing;
         }
 
         Text text = new Text();
@@ -123,10 +126,10 @@ public class TextService {
         text.setContent(dto.getContent());
         text.setCharCount(dto.getContent() != null ? dto.getContent().length() : 0);
         text.setDifficulty(0);
-        text.setClientTextId(dto.getClientTextId());
+        text.setClientTextId(clientTextId);
         textMapper.insert(text);
 
-        log.info("上传文本成功: id={}, clientTextId={}, sourceKey={}", text.getId(), text.getClientTextId(), source.getSourceKey());
+        log.info("上传文本成功: id={}, clientTextId={}, sourceKey={}", text.getId(), clientTextId, sourceKey);
         return text;
     }
 
