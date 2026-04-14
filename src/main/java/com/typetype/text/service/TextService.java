@@ -81,6 +81,11 @@ public class TextService {
         return newText != null ? newText : text;
     }
 
+    public List<Text> getTextSummariesBySourceKey(String sourceKey) {
+        TextSource source = validateSource(sourceKey);
+        return textMapper.findBySourceIdSummary(source.getId());
+    }
+
     public Text getByClientTextId(Long clientTextId) {
         Text text = textMapper.findByClientTextId(clientTextId);
         if (text == null) {
