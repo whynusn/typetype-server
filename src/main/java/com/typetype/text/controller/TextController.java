@@ -42,6 +42,12 @@ public class TextController {
         return Result.success(data);
     }
 
+    @GetMapping("/by-source/{sourceKey}")
+    public Result<List<Text>> getTextsBySource(@PathVariable String sourceKey) {
+        List<Text> texts = textService.getTextSummariesBySourceKey(sourceKey);
+        return Result.success(texts);
+    }
+
     @GetMapping("/by-client-text-id/{clientTextId}")
     public Result<Text> getTextByClientTextId(@PathVariable Long clientTextId) {
         Text text = textService.getByClientTextId(clientTextId);

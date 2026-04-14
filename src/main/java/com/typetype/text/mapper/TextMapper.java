@@ -36,4 +36,7 @@ public interface TextMapper {
 
     @Select("SELECT * FROM t_text WHERE client_text_id = #{clientTextId} LIMIT 1")
     Text findByClientTextId(Long clientTextId);
+
+    @Select("SELECT id, title, char_count, created_at FROM t_text WHERE source_id = #{sourceId} ORDER BY created_at DESC")
+    List<Text> findBySourceIdSummary(Long sourceId);
 }
