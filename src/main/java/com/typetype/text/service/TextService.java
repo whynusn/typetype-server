@@ -21,10 +21,10 @@ import java.util.List;
 public class TextService {
 
     private static final int MIN_FETCH_LENGTH = 10;
-
     private final TextMapper textMapper;
     private final TextSourceMapper textSourceMapper;
     private final TextFetchService textFetchService;
+    private final java.util.Random random = new java.util.Random();
 
     public Text getTextEntityById(Long id) {
         Text text = textMapper.findById(id);
@@ -40,9 +40,15 @@ public class TextService {
 
     public Text getRandomTextBySourceKey(String sourceKey) {
         TextSource source = validateSource(sourceKey);
-        Text text = textMapper.findRandomBySourceId(source.getId());
-        if (text == null) {
+        int count = textMapper.countBySourceId(source.getId());
+        if (count == 0) {
             throw new BusinessException(ResultCode.NOT_FOUND, "该来源暂无文本: " + sourceKey);
+        }
+        int offset = random.nextInt(count);
+        Text text = textMapper.findRandomBySourceIdWithOffset(source.getId(), offset);
+        if (text == null) {
+            // fallback 到原方法
+            text = textMapper.findRandomBySourceId(source.getId());
         }
         return text;
     }

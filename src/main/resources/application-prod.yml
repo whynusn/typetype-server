@@ -1,0 +1,15 @@
+# ==================== 生产环境配置 ====================
+logging:
+  level:
+    root: INFO
+    com.typetype: INFO
+    org.springframework.security: INFO
+
+# 数据库连接池优化
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 10
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000

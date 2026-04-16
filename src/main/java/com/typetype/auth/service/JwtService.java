@@ -44,6 +44,11 @@ public class JwtService {
     private SecretKey secretKey;
 
     /**
+     * JWT Parser（线程安全，初始化一次复用）
+     */
+    private JwtParser jwtParser;
+
+    /**
      * 初始化密钥
      *
      * 🎓 执行时机：
@@ -63,6 +68,11 @@ public class JwtService {
         this.secretKey = Keys.hmacShaKeyFor(
             secretKeyString.getBytes(StandardCharsets.UTF_8)
         );
+
+        // 初始化 JwtParser 一次，后续复用
+        this.jwtParser = Jwts.parser()
+            .verifyWith(secretKey)
+            .build();
 
         log.info("JWT 密钥初始化完成");
     }
@@ -160,13 +170,8 @@ public class JwtService {
      */
     public JwtPayloadDTO verifyToken(String token) {
         try {
-            // 创建 Parser
-            JwtParser parser = Jwts.parser()
-                .verifyWith(secretKey)
-                .build();
-
-            // 解析 Token 并获取 Payload
-            Claims claims = parser.parseSignedClaims(token).getPayload();
+            // 解析 Token 并获取 Payload（使用预初始化的parser）
+            Claims claims = jwtParser.parseSignedClaims(token).getPayload();
 
             // 提取标准 JWT Claims
             Date iat = claims.getIssuedAt();

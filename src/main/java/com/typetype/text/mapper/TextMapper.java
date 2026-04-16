@@ -17,6 +17,12 @@ public interface TextMapper {
     @Select("SELECT * FROM t_text WHERE source_id = #{sourceId}")
     List<Text> findBySourceId(Long sourceId);
 
+    @Select("SELECT COUNT(*) FROM t_text WHERE source_id = #{sourceId}")
+    int countBySourceId(Long sourceId);
+
+    @Select("SELECT * FROM t_text WHERE source_id = #{sourceId} ORDER BY id LIMIT 1 OFFSET #{offset}")
+    Text findRandomBySourceIdWithOffset(Long sourceId, int offset);
+
     @Select("SELECT * FROM t_text WHERE source_id = #{sourceId} ORDER BY RAND() LIMIT 1")
     Text findRandomBySourceId(Long sourceId);
 
