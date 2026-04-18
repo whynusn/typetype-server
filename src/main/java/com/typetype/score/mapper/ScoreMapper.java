@@ -115,9 +115,12 @@ public interface ScoreMapper {
                 ORDER BY max_speed DESC
                 LIMIT #{offset}, #{limit}
             ) best
-            INNER JOIN t_score s ON s.user_id = best.user_id
-                AND s.text_id = #{textId}
-                AND s.speed = best.max_speed
+            INNER JOIN t_score s ON s.id = (
+                SELECT MAX(s2.id) FROM t_score s2
+                WHERE s2.user_id = best.user_id
+                    AND s2.text_id = #{textId}
+                    AND s2.speed = best.max_speed
+            )
             INNER JOIN t_user u ON best.user_id = u.id
             CROSS JOIN (SELECT @rank := #{offset}) r
             ORDER BY s.speed DESC
