@@ -20,16 +20,14 @@ import java.util.List;
 
 /**
  * 成绩服务类
- *
- * 🎓 学习点：
- * - 成绩提交：校验文本存在、记录成绩
- * - 排行榜查询：每用户取最佳成绩
- * - 历史查询：分页查询用户成绩记录
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ScoreService {
+
+    /** 成绩提交最短间隔（秒），防止刷榜 */
+    private static final long MIN_SUBMIT_INTERVAL_SECONDS = 5;
 
     private final ScoreMapper scoreMapper;
     private final TextMapper textMapper;
@@ -52,6 +50,13 @@ public class ScoreService {
 
         Long userId = SecurityUtils.getCurrentUserId();
         Long textId = text.getId();
+
+        // 频率限制：同一用户两次提交间隔不得小于 5 秒
+        Long lastSubmitTime = scoreMapper.findLastSubmitTime(userId);
+        long nowSeconds = System.currentTimeMillis() / 1000;
+        if (lastSubmitTime != null && (nowSeconds - lastSubmitTime) < MIN_SUBMIT_INTERVAL_SECONDS) {
+            throw new BusinessException(ResultCode.SCORE_SUBMIT_TOO_FREQUENT);
+        }
 
         Score score = Score.builder()
             .userId(userId)

@@ -97,12 +97,14 @@ public class UserService {
         // 1. 根据用户名查询用户
         User user = userMapper.findByUsername(username);
         if (user == null) {
-            throw new BusinessException(ResultCode.USER_NOT_FOUND);
+            // 用户不存在也返回统一的 LOGIN_FAILED，防止账号枚举
+            throw new BusinessException(ResultCode.LOGIN_FAILED);
         }
 
         // 2. 校验密码（BCrypt.matches：每次加密结果不同，但可以验证）
         if (!passwordEncoder.matches(password, user.getPassword())) {
-            throw new BusinessException(ResultCode.PASSWORD_ERROR);
+            // 密码错误也返回统一的 LOGIN_FAILED，防止账号枚举
+            throw new BusinessException(ResultCode.LOGIN_FAILED);
         }
 
         return user;

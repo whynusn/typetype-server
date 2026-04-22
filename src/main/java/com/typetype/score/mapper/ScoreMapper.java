@@ -183,4 +183,13 @@ public interface ScoreMapper {
      */
     @Select("SELECT COUNT(*) FROM t_score WHERE user_id = #{userId} AND text_id = #{textId}")
     long countByUserIdAndTextId(@Param("userId") Long userId, @Param("textId") Long textId);
+
+    /**
+     * 查询用户最近一次提交成绩的时间（用于频率限制）
+     *
+     * @param userId 用户ID
+     * @return 最近提交时间（秒级时间戳），无记录返回 null
+     */
+    @Select("SELECT UNIX_TIMESTAMP(MAX(created_at)) FROM t_score WHERE user_id = #{userId}")
+    Long findLastSubmitTime(Long userId);
 }

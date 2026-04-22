@@ -33,6 +33,7 @@ public enum ResultCode {
     PASSWORD_ERROR(20003, "密码错误"),
     USER_NOT_FOUND(20004, "用户名不存在"),
     USER_EXISTS(20005, "用户名已存在"),
+    LOGIN_FAILED(20006, "用户名或密码错误"),
 
     // ==================== 文本业务 (30xxx) ====================
     TEXT_SOURCE_NOT_FOUND(30001, "文本来源不存在"),

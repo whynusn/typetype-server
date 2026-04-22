@@ -106,6 +106,14 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
+        <!-- ==================== 限流 ==================== -->
+        <!-- Bucket4j：基于令牌桶的请求限流 -->
+        <dependency>
+            <groupId>com.bucket4j</groupId>
+            <artifactId>bucket4j-core</artifactId>
+            <version>8.10.1</version>
+        </dependency>
+
         <!-- ==================== Redis 缓存 ==================== -->
         <!-- spring-boot-starter-data-redis：Redis 客户端（MVP 后启用） -->
         <!--

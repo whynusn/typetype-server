@@ -11,6 +11,11 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 /**
  * Spring Security 配置类
@@ -64,49 +69,51 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+            // 启用 CORS（使用下方 corsConfigurationSource Bean）
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
             // 禁用 CSRF（JWT API 通常不需要）
-            // 🎓 为什么禁用？
-            // - JWT 不依赖 Session Cookie
-            // - CSRF 攻击需要 Cookie + 自动提交表单
-            // - 禁用可以减少不必要的检查开销
             .csrf(csrf -> csrf.disable())
 
             // 添加 JWT 认证过滤器
-            // 在 UsernamePasswordAuthenticationFilter 之前执行
-            // 🎓 为什么在 UsernamePasswordAuthenticationFilter 之前？
-            // - 我们使用 JWT 认证，不使用用户名密码表单登录
-            // - 这个过滤器应该代替默认的表单认证过滤器
             .addFilterBefore(
                 jwtAuthenticationFilter,
                 UsernamePasswordAuthenticationFilter.class
             )
 
             // 配置异常处理
-            // 🎓 认证入口点：
-            // - 当 .authenticated() 拦截时调用
-            // - 返回自定义的 401 响应而非默认 HTML
             .exceptionHandling(exceptions -> exceptions
                 .authenticationEntryPoint(jwtAuthenticationEntryPoint)
             )
 
             // 配置请求授权
             .authorizeHttpRequests(auth -> auth
-                // 白名单：这些接口不需要认证
-                // 🎓 白名单设计：
-                // - /api/v1/auth/**：注册、登录、刷新、登出
-                // - /api/v1/health：健康检查接口
-                // - /error：默认错误页面
                 .requestMatchers("/api/v1/auth/**", "/api/v1/health", "/error").permitAll()
-
-                // 其他所有请求需要认证
-                // 🎓 authenticated() 的作用：
-                // - 检查 SecurityContextHolder.getContext().getAuthentication()
-                // - 如果为 null，则调用 AuthenticationEntryPoint
-                // - 如果有值，则放行请求
                 .anyRequest().authenticated()
             );
 
         return http.build();
+    }
+
+    /**
+     * CORS 配置
+     *
+     * 允许 typetype 客户端（桌面应用）及浏览器端访问 API。
+     * 生产环境如有固定域名，可将 allowedOrigins 改为具体域名列表。
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOriginPatterns(List.of("*"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+        config.setExposedHeaders(List.of("Authorization"));
+        config.setAllowCredentials(true);
+        config.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/**", config);
+        return source;
     }
 
     /**
