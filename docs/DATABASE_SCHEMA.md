@@ -1,46 +1,46 @@
-# TypeType Database Schema
+# TypeType 数据库 Schema
 
-Self-contained reference for the MySQL schema managed by Flyway migrations V1–V8.
+Flyway 迁移 V1–V8 管理的 MySQL schema 自包含参考。
 
-**Database**: `typetype` (MySQL)
-**Charset**: utf8mb4
-**Migration**: Flyway, auto-runs on application startup
-
----
-
-## Tables
-
-### t_user
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| id | BIGINT | no | auto_increment | Primary key |
-| username | VARCHAR(50) | no | — | Unique login name |
-| password | VARCHAR(100) | no | — | BCrypt hash |
-| nickname | VARCHAR(64) | yes | null | Display name |
-| avatar_url | VARCHAR(500) | yes | null | Avatar URL |
-| role | VARCHAR(20) | no | 'USER' | `USER` or `ADMIN` |
-| created_at | DATETIME | no | CURRENT_TIMESTAMP | Creation time |
-| updated_at | DATETIME | no | CURRENT_TIMESTAMP ON UPDATE | Last update |
-
-**Indexes**: `UNIQUE (username)`
+**数据库**: `typetype`（MySQL）
+**字符集**: utf8mb4
+**迁移方式**: Flyway，应用启动时自动执行
 
 ---
 
-### t_text_source
+## 数据表
 
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| id | BIGINT | no | auto_increment | Primary key |
-| source_key | VARCHAR(50) | no | — | Unique identifier (e.g., `cet4`, `jisubei`) |
-| label | VARCHAR(100) | no | — | Human-readable name |
-| category | VARCHAR(50) | no | — | `vocabulary`, `article`, or `custom` |
-| is_active | TINYINT(1) | no | 1 | Whether source is enabled |
-| created_at | DATETIME | no | CURRENT_TIMESTAMP | Creation time |
+### t_user（用户表）
 
-**Indexes**: `UNIQUE (source_key)`
+| 列名 | 类型 | 可空 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| id | BIGINT | 否 | 自增 | 主键 |
+| username | VARCHAR(50) | 否 | — | 唯一登录名 |
+| password | VARCHAR(100) | 否 | — | BCrypt 哈希值 |
+| nickname | VARCHAR(64) | 是 | null | 显示昵称 |
+| avatar_url | VARCHAR(500) | 是 | null | 头像 URL |
+| role | VARCHAR(20) | 否 | 'USER' | 角色：`USER` 或 `ADMIN` |
+| created_at | DATETIME | 否 | CURRENT_TIMESTAMP | 创建时间 |
+| updated_at | DATETIME | 否 | CURRENT_TIMESTAMP ON UPDATE | 最后更新时间 |
 
-**Seeded data** (V1, V3, V5):
+**索引**: `UNIQUE (username)`
+
+---
+
+### t_text_source（文本来源表）
+
+| 列名 | 类型 | 可空 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| id | BIGINT | 否 | 自增 | 主键 |
+| source_key | VARCHAR(50) | 否 | — | 唯一标识符（如 `cet4`、`jisubei`） |
+| label | VARCHAR(100) | 否 | — | 人类可读名称 |
+| category | VARCHAR(50) | 否 | — | 分类：`vocabulary`、`article`、`code`、`custom` |
+| is_active | TINYINT(1) | 否 | 1 | 是否启用 |
+| created_at | DATETIME | 否 | CURRENT_TIMESTAMP | 创建时间 |
+
+**索引**: `UNIQUE (source_key)`
+
+**预置数据**（V1、V3、V5）：
 
 | source_key | label | category |
 |------------|-------|----------|
@@ -53,81 +53,81 @@ Self-contained reference for the MySQL schema managed by Flyway migrations V1–
 
 ---
 
-### t_text
+### t_text（文本表）
 
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| id | BIGINT | no | auto_increment | Primary key |
-| source_id | BIGINT | no | — | FK → t_text_source.id |
-| title | VARCHAR(200) | no | — | Text title |
-| content | TEXT | no | — | Full text content |
-| char_count | INT | no | 0 | Character count (redundant for query speed) |
-| difficulty | INT | no | 0 | Difficulty level 0–5 |
-| client_text_id | BIGINT | yes | null | Client-computed hash ID |
-| created_at | DATETIME | no | CURRENT_TIMESTAMP | Creation time |
+| 列名 | 类型 | 可空 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| id | BIGINT | 否 | 自增 | 主键 |
+| source_id | BIGINT | 否 | — | 外键 → t_text_source.id |
+| title | VARCHAR(200) | 否 | — | 文本标题 |
+| content | TEXT | 否 | — | 文本内容 |
+| char_count | INT | 否 | 0 | 字符数（冗余字段，加速查询） |
+| difficulty | INT | 否 | 0 | 难度等级 0–5 |
+| client_text_id | BIGINT | 是 | null | 客户端哈希 ID |
+| created_at | DATETIME | 否 | CURRENT_TIMESTAMP | 创建时间 |
 
-**Indexes**: `FK (source_id)`, `UNIQUE (client_text_id)`
+**索引**: `FK (source_id)`、`UNIQUE (client_text_id)`
 
-**clientTextId computation**: `decimal(SHA-256(sourceKey:content)[0:8]) % 10^9`
-
----
-
-### t_score
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| id | BIGINT | no | auto_increment | Primary key |
-| user_id | BIGINT | no | — | FK → t_user.id |
-| text_id | BIGINT | yes | null | FK → t_text.id |
-| char_count | INT | no | 0 | Characters in the text |
-| wrong_char_count | INT | no | 0 | Incorrectly typed characters |
-| backspace_count | INT | no | 0 | Backspace key presses |
-| correction_count | INT | no | 0 | Characters corrected via backspace-then-retype |
-| key_stroke_count | INT | no | 0 | Total key presses |
-| time | DECIMAL(10,2) | no | 0 | Duration in seconds |
-| created_at | DATETIME | no | CURRENT_TIMESTAMP | Submission time |
-
-**Indexes**:
-- `idx_user_created` — `(user_id, created_at DESC)` — user history queries
-- `idx_created_at` — `(created_at)` — time range queries
-
-**Derived metrics** (computed by `Score` entity getter methods, not stored):
-
-| Metric | Formula | Precision |
-|--------|---------|-----------|
-| speed | `charCount * 60 / time` | 2 decimals |
-| keyStroke | `keyStrokeCount / time` | 2 decimals |
-| codeLength | `keyStrokeCount / charCount` | 3 decimals |
-| keyAccuracy | `(keyStrokeCount - wrongKeys) / keyStrokeCount * 100` | 2 decimals |
-| effectiveSpeed | `(charCount - wrongCharCount) * 60 / time` | 2 decimals |
-
-Where `wrongKeys = backspaceCount + correctionCount * codeLength`.
+**clientTextId 计算方式**: `decimal(SHA-256(sourceKey:content)[0:8]) % 10^9`
 
 ---
 
-## Migration History
+### t_score（成绩表）
 
-| Version | Description |
-|---------|-------------|
-| V1 | Create core tables (t_user, t_text_source, t_text, t_score) + seed data |
-| V2 | Add `role` column to t_user |
-| V3 | Add jisubei text source |
-| V4 | Add leaderboard performance indexes |
-| V5 | Add custom text source |
-| V6 | Add `client_text_id` column to t_text |
-| V7 | Add V2 raw fields to t_score (charCount, wrongCharCount, etc.), backfill from legacy |
-| V8 | Drop legacy derived columns from t_score (speed, keyStroke, codeLength, etc.) |
+| 列名 | 类型 | 可空 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| id | BIGINT | 否 | 自增 | 主键 |
+| user_id | BIGINT | 否 | — | 外键 → t_user.id |
+| text_id | BIGINT | 是 | null | 外键 → t_text.id |
+| char_count | INT | 否 | 0 | 文本总字符数 |
+| wrong_char_count | INT | 否 | 0 | 错误字符数 |
+| backspace_count | INT | 否 | 0 | 退格键按下次数 |
+| correction_count | INT | 否 | 0 | 回改字数 |
+| key_stroke_count | INT | 否 | 0 | 总按键次数 |
+| time | DECIMAL(10,2) | 否 | 0 | 用时（秒） |
+| created_at | DATETIME | 否 | CURRENT_TIMESTAMP | 提交时间 |
+
+**索引**:
+- `idx_user_created` — `(user_id, created_at DESC)` — 用户历史查询
+- `idx_created_at` — `(created_at)` — 时间范围查询
+
+**派生指标**（由 Score 实体 getter 方法计算，不存入数据库）：
+
+| 指标 | 公式 | 精度 |
+|------|------|------|
+| speed | `charCount * 60 / time` | 2 位小数 |
+| keyStroke | `keyStrokeCount / time` | 2 位小数 |
+| codeLength | `keyStrokeCount / charCount` | 3 位小数 |
+| keyAccuracy | `(keyStrokeCount - wrongKeys) / keyStrokeCount * 100` | 2 位小数 |
+| effectiveSpeed | `(charCount - wrongCharCount) * 60 / time` | 2 位小数 |
+
+其中 `wrongKeys = backspaceCount + correctionCount * codeLength`。
 
 ---
 
-## Entity-Relationship
+## 迁移历史
+
+| 版本 | 说明 |
+|------|------|
+| V1 | 创建核心表（t_user、t_text_source、t_text、t_score）+ 预置数据 |
+| V2 | t_user 新增 `role` 列 |
+| V3 | 新增 jisubei 文本来源 |
+| V4 | 排行榜性能索引 |
+| V5 | 新增 custom 文本来源 |
+| V6 | t_text 新增 `client_text_id` 列 |
+| V7 | t_score 新增 V2 原始字段（charCount 等），回填历史数据 |
+| V8 | t_score 删除所有旧派生字段（speed、keyStroke 等） |
+
+---
+
+## 实体关系
 
 ```
 t_user  1 ──→ N  t_score
-t_text  1 ──→ N  t_score
+t_text  1 ──→ N  score
 t_text_source  1 ──→ N  t_text
 ```
 
-- A user submits many scores
-- A text belongs to one source, has many scores
-- A score links one user to one text (text_id is nullable for offline texts)
+- 一个用户可提交多条成绩
+- 一个文本属于一个来源，可有多条成绩
+- 一条成绩关联一个用户和一个文本（text_id 可为空，用于离线文本）

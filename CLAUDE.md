@@ -2,53 +2,25 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Commands
+## 命令
 
-- Build/run: `mvn spring-boot:run` or `./start.sh` (generates random JWT secret)
-- Run tests: `mvn test`
-- Compile only: `mvn compile`
-- Package executable jar: `mvn package`
-- Run single test: `mvn test -Dtest=ClassNameTest`
-- Flyway migrate (auto-runs on app start): `mvn flyway:migrate`
+- 构建/运行: `mvn spring-boot:run` 或 `./start.sh`（自动生成 JWT 密钥）
+- 运行测试: `mvn test`
+- 仅编译: `mvn compile`
+- 打包可执行 jar: `mvn package`
+- 运行单个测试: `mvn test -Dtest=ClassNameTest`
+- Flyway 迁移（应用启动时自动执行）: `mvn flyway:migrate`
 
-## Architecture
+## 文档
 
-This is a Spring Boot 3.2.5 backend for the TypeType typing practice application.
+- [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) — 接口契约（请求/响应 JSON 结构）
+- [`docs/DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md) — 数据库 schema 与迁移历史
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — 模块结构与数据流
 
-### Project Structure
+## 技术栈
 
-Organized by **feature-first** package structure:
-- `com.typetype.auth` - Authentication (JWT login/register)
-- `com.typetype.user` - User management
-- `com.typetype.text` - Text management for typing practice
-- `com.typetype.score` - User score/race records
-- `com.typetype.common` - Shared utilities (exception handling, results, security utils)
+Spring Boot 3.2.5 + Java 21 + Spring Security + MyBatis 3.0.3 + MySQL + Flyway + JWT (jjwt 0.12.6) + Bucket4j + Lombok
 
-### Technology Stack
+## 项目结构
 
-- **Framework**: Spring Boot 3.2.5 + Spring Security + Spring MVC
-- **Authentication**: JWT (io.jsonwebtoken 0.12.6) with Bearer token authentication
-- **Database**: MySQL with MyBatis 3.0.3 for ORM, Flyway for database migrations
-- **Build**: Maven, Java 21
-- **Other**: Lombok for code simplification
-
-### Key Components
-
-- `JwtAuthenticationFilter` - Validates JWT tokens from request headers
-- `SecurityConfig` - Spring Security configuration defining protected/public endpoints
-- `GlobalExceptionHandler` - Global exception handling returning standardized Result responses
-- `Result`/`ResultCode` - Standard API response format
-
-### Database
-
-- Flyway manages migrations in `src/main/resources/db/migration/`
-- Migrations run automatically on application startup
-- MyBatis mapper XML files expected in `classpath:mapper/*.xml`
-- Local MySQL database expected at `localhost:3306/typetype`
-
-### Configuration
-
-- `application.yml` - Main configuration
-- `application-dev.yml` - Development-specific overrides
-- JWT secret key read from `JWT_SECRET_KEY` environment variable
-- Server runs on port 8080 by default
+feature-first 包结构：`auth`（认证）、`user`（用户）、`text`（文本）、`score`（成绩）、`common`（公共基础设施）

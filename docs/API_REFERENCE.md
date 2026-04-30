@@ -1,16 +1,16 @@
-# TypeType API Reference
+# TypeType 接口参考
 
-Self-contained API contract for the TypeType backend. Each endpoint section includes complete request/response JSON shapes — no external references required.
+TypeType 后端的自包含 API 契约。每个端点包含完整的请求/响应 JSON 结构，无需交叉引用其他文档。
 
-**Base URL**: `http://localhost:8080/api/v1`
-**Auth**: JWT Bearer token in `Authorization` header (except auth endpoints)
-**Content-Type**: `application/json` for all request/response bodies
+**基础路径**: `http://localhost:8080/api/v1`
+**认证方式**: JWT Bearer Token（认证端点除外）
+**Content-Type**: `application/json`
 
 ---
 
-## Common Envelope
+## 通用响应格式
 
-Every response is wrapped in:
+所有接口响应统一包装为：
 
 ```json
 {
@@ -21,7 +21,7 @@ Every response is wrapped in:
 }
 ```
 
-Paginated responses use `data` as:
+分页响应中 `data` 结构为：
 
 ```json
 {
@@ -33,34 +33,34 @@ Paginated responses use `data` as:
 }
 ```
 
-### Error Codes
+### 错误码
 
-| Code | Module | Meaning |
-|------|--------|---------|
-| 200 | — | Success |
-| 10001 | System | Internal error |
-| 10002 | System | Parameter validation failed |
-| 10003 | System | Resource not found |
-| 20001 | Auth | Token expired |
-| 20002 | Auth | Token invalid |
-| 20003 | Auth | Password error |
-| 20004 | Auth | Username not found |
-| 20005 | Auth | Username already exists |
-| 20006 | Auth | Login failed (wrong credentials) |
-| 30001 | Text | Text source not found |
-| 30002 | Text | No available text |
-| 40001 | Score | Score data invalid |
-| 40002 | Score | Submit too frequent (5s cooldown) |
+| 错误码 | 模块 | 含义 |
+|--------|------|------|
+| 200 | — | 成功 |
+| 10001 | 系统 | 内部异常 |
+| 10002 | 系统 | 参数校验失败 |
+| 10003 | 系统 | 资源不存在 |
+| 20001 | 认证 | Token 已过期 |
+| 20002 | 认证 | Token 无效 |
+| 20003 | 认证 | 密码错误 |
+| 20004 | 认证 | 用户名不存在 |
+| 20005 | 认证 | 用户名已存在 |
+| 20006 | 认证 | 登录失败（用户名或密码错误） |
+| 30001 | 文本 | 文本来源不存在 |
+| 30002 | 文本 | 无可用文本 |
+| 40001 | 成绩 | 成绩数据异常 |
+| 40002 | 成绩 | 提交过于频繁（5 秒冷却） |
 
 ---
 
-## Auth Module
+## 认证模块
 
 ### POST /auth/register
 
-Register a new user.
+注册新用户。
 
-**Request:**
+**请求体：**
 ```json
 {
   "username": "john_doe",
@@ -70,14 +70,14 @@ Register a new user.
 }
 ```
 
-| Field | Type | Required | Constraints |
-|-------|------|----------|-------------|
-| username | String | yes | 3-20 chars, `[a-zA-Z0-9_]` |
-| password | String | yes | 6-30 chars |
-| confirmPassword | String | yes | Must match password |
-| nickname | String | no | max 64 chars |
+| 字段 | 类型 | 必填 | 约束 |
+|------|------|------|------|
+| username | String | 是 | 3-20 字符，`[a-zA-Z0-9_]` |
+| password | String | 是 | 6-30 字符 |
+| confirmPassword | String | 是 | 必须与 password 一致 |
+| nickname | String | 否 | 最多 64 字符 |
 
-**Response** — `Result<UserVO>`:
+**响应** — `Result<UserVO>`：
 ```json
 {
   "code": 200,
@@ -89,8 +89,7 @@ Register a new user.
     "avatarUrl": null,
     "createdAt": "2024-01-01T00:00:00",
     "updatedAt": "2024-01-01T00:00:00"
-  },
-  "timestamp": 1704067200000
+  }
 }
 ```
 
@@ -98,7 +97,7 @@ Register a new user.
 
 ### POST /auth/login
 
-**Request:**
+**请求体：**
 ```json
 {
   "username": "john_doe",
@@ -106,7 +105,7 @@ Register a new user.
 }
 ```
 
-**Response** — `Result<TokenVO>`:
+**响应** — `Result<TokenVO>`：
 ```json
 {
   "code": 200,
@@ -123,8 +122,7 @@ Register a new user.
       "createdAt": "2024-01-01T00:00:00",
       "updatedAt": "2024-01-01T00:00:00"
     }
-  },
-  "timestamp": 1704067200000
+  }
 }
 ```
 
@@ -132,47 +130,45 @@ Register a new user.
 
 ### POST /auth/refresh
 
-Rotate tokens. Pass the **refresh token** in the `Authorization` header.
+令牌轮换。在 `Authorization` 头中传入 **refresh token**。
 
-**Headers:**
+**请求头：**
 ```
 Authorization: Bearer <refreshToken>
 ```
 
-**Response** — `Result<TokenVO>` (same shape as login response).
+**响应** — `Result<TokenVO>`（结构同登录响应）。
 
 ---
 
 ### POST /auth/logout
 
-**Headers:**
+**请求头：**
 ```
-Authorization: Bearer <token>  (optional)
+Authorization: Bearer <token>  （可选）
 ```
 
-**Response:**
+**响应：**
 ```json
 {
   "code": 200,
   "message": "登出成功",
-  "data": null,
-  "timestamp": 1704067200000
+  "data": null
 }
 ```
 
 ---
 
-## Text Module
+## 文本模块
 
 ### GET /texts/catalog
 
-Returns all active text sources.
+获取所有已启用的文本来源。
 
-**Response** — `Result<List<TextSource>>`:
+**响应** — `Result<List<TextSource>>`：
 ```json
 {
   "code": 200,
-  "message": "操作成功",
   "data": [
     {
       "id": 1,
@@ -190,8 +186,7 @@ Returns all active text sources.
       "isActive": true,
       "createdAt": "2024-01-01T00:00:00"
     }
-  ],
-  "timestamp": 1704067200000
+  ]
 }
 ```
 
@@ -199,11 +194,11 @@ Returns all active text sources.
 
 ### GET /texts/source/{sourceKey}
 
-Get a random text from a source. Uses offset-based random selection (no `ORDER BY RAND()`).
+获取指定来源的随机文本。使用 offset 随机策略（非 `ORDER BY RAND()`）。
 
-**Path:** `sourceKey` — one of `cet4`, `cet6`, `essay_classic`, `code_snippet`, `jisubei`, `custom`
+**路径参数：** `sourceKey` — 可选值：`cet4`、`cet6`、`essay_classic`、`code_snippet`、`jisubei`、`custom`
 
-**Response** — `Result<Text>`:
+**响应** — `Result<Text>`：
 ```json
 {
   "code": 200,
@@ -224,70 +219,68 @@ Get a random text from a source. Uses offset-based random selection (no `ORDER B
 
 ### GET /texts/latest/{sourceKey}
 
-Get the most recent text from a source.
+获取指定来源的最新文本。
 
-**Response** — `Result<Text>` (same shape as above).
+**响应** — `Result<Text>`（结构同上）。
 
 ---
 
 ### GET /texts/{id}
 
-Get text by server-side ID.
+通过服务端 ID 获取文本。
 
-**Path:** `id` — text primary key
-
-**Response** — `Result<Text>` (same shape as above).
+**响应** — `Result<Text>`（结构同上）。
 
 ---
 
 ### GET /texts/by-source/{sourceKey}
 
-Get all texts from a specific source.
+获取指定来源下的所有文本。
 
-**Response** — `Result<List<Text>>` (list of Text objects).
+**响应** — `Result<List<Text>>`。
 
 ---
 
 ### GET /texts/by-client-text-id/{clientTextId}
 
-Lookup text by client-computed hash ID. `clientTextId` is a decimal integer derived from `SHA-256(sourceKey:content)` → first 8 hex chars → decimal mod 10^9.
+通过客户端哈希 ID 查找文本。`clientTextId` 为十进制整数，由 `SHA-256(sourceKey:content)` 前 8 位十六进制 → 十进制 mod 10^9 计算得出。
 
-**Path:** `clientTextId` — decimal integer
+**路径参数：** `clientTextId` — 十进制整数
 
-**Response** — `Result<Text>` (same shape as above).
+**响应** — `Result<Text>`（结构同上）。
 
 ---
 
-### POST /texts/upload (ADMIN only)
+### POST /texts/upload（仅 ADMIN）
 
-Upload a new text. Requires `ROLE_ADMIN`.
+上传新文本。需要 `ROLE_ADMIN` 权限。
 
-**Request:**
+**请求体：**
 ```json
 {
-  "title": "My Custom Text",
+  "title": "我的自定义文本",
   "content": "The quick brown fox jumps over the lazy dog.",
   "sourceKey": "custom"
 }
 ```
 
-| Field | Type | Required | Notes |
-|-------|------|----------|-------|
-| title | String | no | Defaults to first 20 chars of content |
-| content | String | yes | Text to type |
-| sourceKey | String | yes | Must exist in t_text_source. Auto-creates if `custom` |
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| title | String | 否 | 默认取 content 前 20 字符 |
+| content | String | 是 | 待打字的文本内容 |
+| sourceKey | String | 是 | 必须已存在于 t_text_source。若为 `custom` 则自动创建 |
 
-**Response** — `Result<Text>` (created text with server-assigned `clientTextId`).
+**响应** — `Result<Text>`（包含服务端分配的 `clientTextId`）。
 
 ---
 
-## Score Module
+## 成绩模块
 
 ### POST /scores
 
-Submit a typing test score. **V2 contract**: client sends only raw fields; all derived metrics are computed server-side.
+提交打字测试成绩。**V2 契约**：客户端仅发送原始字段，所有派生指标由服务端统一计算。
 
-**Request:**
+**请求体：**
 ```json
 {
   "textId": 42,
@@ -300,32 +293,31 @@ Submit a typing test score. **V2 contract**: client sends only raw fields; all d
 }
 ```
 
-| Field | Type | Required | Validation | Description |
-|-------|------|----------|------------|-------------|
-| textId | Long | no | — | Server text ID. null if offline text |
-| charCount | Integer | yes | >= 0 | Total characters in the text |
-| wrongCharCount | Integer | yes | >= 0 | Characters typed incorrectly |
-| backspaceCount | Integer | yes | >= 0 | Backspace key presses |
-| correctionCount | Integer | yes | >= 0 | Characters corrected via backspace-then-retype |
-| keyStrokeCount | Integer | yes | >= 0 | Total key presses (including backspace, corrections) |
-| time | BigDecimal | yes | >= 0 | Duration in seconds |
+| 字段 | 类型 | 必填 | 校验 | 说明 |
+|------|------|------|------|------|
+| textId | Long | 否 | — | 服务端文本 ID，离线文本可为 null |
+| charCount | Integer | 是 | >= 0 | 文本总字符数 |
+| wrongCharCount | Integer | 是 | >= 0 | 错误字符数 |
+| backspaceCount | Integer | 是 | >= 0 | 退格键按下次数 |
+| correctionCount | Integer | 是 | >= 0 | 回改字数（退格后重打） |
+| keyStrokeCount | Integer | 是 | >= 0 | 总按键次数（含退格、回改） |
+| time | BigDecimal | 是 | >= 0 | 用时（秒） |
 
-**Rate limit**: 5-second minimum interval between submissions per user.
+**提交频率限制**：同一用户两次提交间隔不少于 5 秒。
 
-**Server-side derived metrics** (computed on the Score entity, not stored in DB):
-- `speed` = `charCount * 60 / time`
-- `keyStroke` = `keyStrokeCount / time`
-- `codeLength` = `keyStrokeCount / charCount`
-- `keyAccuracy` = `(keyStrokeCount - wrongKeys) / keyStrokeCount * 100` where `wrongKeys = backspaceCount + correctionCount * codeLength`
-- `effectiveSpeed` = `(charCount - wrongCharCount) * 60 / time`
+**服务端派生指标**（由 Score 实体 getter 计算，不存入数据库）：
+- `speed` = `charCount * 60 / time`（字/分）
+- `keyStroke` = `keyStrokeCount / time`（击/秒）
+- `codeLength` = `keyStrokeCount / charCount`（击/字）
+- `keyAccuracy` = `(keyStrokeCount - wrongKeys) / keyStrokeCount * 100`（%），其中 `wrongKeys = backspaceCount + correctionCount * codeLength`
+- `effectiveSpeed` = `(charCount - wrongCharCount) * 60 / time`（字/分）
 
-**Response:**
+**响应：**
 ```json
 {
   "code": 200,
   "message": "成绩提交成功",
-  "data": null,
-  "timestamp": 1704067200000
+  "data": null
 }
 ```
 
@@ -333,11 +325,11 @@ Submit a typing test score. **V2 contract**: client sends only raw fields; all d
 
 ### GET /scores/history
 
-Current user's score history, ordered by `created_at DESC`.
+当前用户的成绩历史，按 `created_at DESC` 排序。
 
-**Query params**: `page` (default 1), `size` (default 20)
+**查询参数：** `page`（默认 1）、`size`（默认 20）
 
-**Response** — `Result<PageResult<ScoreVO>>`:
+**响应** — `Result<PageResult<ScoreVO>>`：
 ```json
 {
   "code": 200,
@@ -368,29 +360,29 @@ Current user's score history, ordered by `created_at DESC`.
 }
 ```
 
-Note: `speed`, `keyStroke`, `codeLength`, `keyAccuracy`, `effectiveSpeed` are **derived** — computed by `Score` entity getter methods from the stored raw fields. `charCount`, `wrongCharCount`, `backspaceCount`, `correctionCount`, `keyStrokeCount` (not in VO but stored), `time` are **raw** fields.
+> **注意：** `speed`、`keyStroke`、`codeLength`、`keyAccuracy`、`effectiveSpeed` 为**派生字段**，由 Score 实体 getter 从存储的原始字段计算而来。`charCount`、`wrongCharCount`、`backspaceCount`、`correctionCount`、`time` 为**原始字段**。
 
 ---
 
 ### GET /texts/{textId}/scores
 
-Current user's scores for a specific text.
+当前用户在指定文本下的成绩历史。
 
-**Path:** `textId` — text primary key
-**Query params**: `page` (default 1), `size` (default 20)
+**路径参数：** `textId` — 文本主键
+**查询参数：** `page`（默认 1）、`size`（默认 20）
 
-**Response** — same shape as `/scores/history`.
+**响应** — 结构同 `/scores/history`。
 
 ---
 
 ### GET /texts/{textId}/leaderboard
 
-Leaderboard for a specific text. One entry per user (highest speed). Ranking by speed descending.
+指定文本的排行榜。每个用户仅保留最高速度的一条记录，按速度降序排列。
 
-**Path:** `textId` — text primary key
-**Query params**: `page` (default 1), `size` (default 50)
+**路径参数：** `textId` — 文本主键
+**查询参数：** `page`（默认 1）、`size`（默认 50）
 
-**Response** — `Result<PageResult<LeaderboardVO>>`:
+**响应** — `Result<PageResult<LeaderboardVO>>`：
 ```json
 {
   "code": 200,
@@ -400,7 +392,7 @@ Leaderboard for a specific text. One entry per user (highest speed). Ranking by 
         "rank": 1,
         "userId": 1,
         "username": "speedtyper",
-        "nickname": "Speed Demon",
+        "nickname": "极速达人",
         "avatarUrl": null,
         "speed": 180.50,
         "keyStroke": 7.20,
@@ -427,11 +419,11 @@ Leaderboard for a specific text. One entry per user (highest speed). Ranking by 
 
 ### GET /texts/{textId}/best
 
-Current user's best score for a specific text. Returns `null` if no scores exist.
+当前用户在指定文本下的最佳成绩。无成绩时返回 `null`。
 
-**Path:** `textId` — text primary key
+**路径参数：** `textId` — 文本主键
 
-**Response** — `Result<ScoreVO>` or `Result<null>`:
+**响应** — `Result<ScoreVO>` 或 `Result<null>`：
 ```json
 {
   "code": 200,
@@ -456,13 +448,13 @@ Current user's best score for a specific text. Returns `null` if no scores exist
 
 ---
 
-## User Module
+## 用户模块
 
 ### GET /users/me
 
-Returns the currently authenticated user.
+获取当前已认证用户的信息。
 
-**Response** — `Result<UserVO>`:
+**响应** — `Result<UserVO>`：
 ```json
 {
   "code": 200,
@@ -479,53 +471,49 @@ Returns the currently authenticated user.
 
 ---
 
-### GET /users/{id} (ADMIN only)
+### GET /users/{id}（仅 ADMIN）
 
-Returns a user by ID. Requires `ROLE_ADMIN`.
+通过 ID 获取用户信息。需要 `ROLE_ADMIN` 权限。
 
-**Path:** `id` — user primary key
+**路径参数：** `id` — 用户主键
 
-**Response** — `Result<UserVO>` (same shape as above).
+**响应** — `Result<UserVO>`（结构同上）。
 
 ---
 
-## Security
+## 安全配置
 
-### Authentication Flow
+### 认证流程
 
-1. Client sends `POST /auth/login` → receives `accessToken` + `refreshToken`
-2. All subsequent requests include `Authorization: Bearer <accessToken>`
-3. `JwtAuthenticationFilter` validates token on every request
-4. When access token expires (401), client calls `POST /auth/refresh` with refresh token
-5. Server rotates both tokens (old refresh token is invalidated)
+1. 客户端调用 `POST /auth/login` → 获得 `accessToken` + `refreshToken`
+2. 后续请求在 `Authorization` 头中携带 `Bearer <accessToken>`
+3. `JwtAuthenticationFilter` 在每个请求上校验 token
+4. Access token 过期（401）时，客户端使用 refresh token 调用 `POST /auth/refresh`
+5. 服务端执行令牌轮换（旧 refresh token 失效，返回新 token 对）
 
-### JWT Configuration
+### JWT 配置
 
-| Parameter | Value |
-|-----------|-------|
-| Algorithm | HMAC-SHA256 |
-| Secret | `JWT_SECRET_KEY` env var |
-| Access token TTL | 15 minutes |
-| Refresh token TTL | 7 days |
-| Issuer | typetype-server |
+| 参数 | 值 |
+|------|-----|
+| 算法 | HMAC-SHA256 |
+| 密钥 | 环境变量 `JWT_SECRET_KEY` |
+| Access token 有效期 | 15 分钟 |
+| Refresh token 有效期 | 7 天 |
+| 签发者 | typetype-server |
 
-### Public Endpoints (no auth required)
+### 公开端点（无需认证）
 
 - `POST /auth/register`
 - `POST /auth/login`
 - `POST /auth/refresh`
 - `POST /auth/logout`
 
-### Admin-Only Endpoints
+### 管理员端点
 
 - `POST /texts/upload`
 - `GET /users/{id}`
 
-### Rate Limiting
+### 限流
 
-Applied to `/api/v1/auth/**` via Bucket4j (per-IP):
-- Login: 10 requests/min
-- Register: 5 requests/min
-- Other auth: 20 requests/min
-
-Score submission has application-level rate limiting: 5-second minimum interval per user.
+- 认证端点：Bucket4j 按 IP 限流（登录 10 次/分，注册 5 次/分，其他 20 次/分）
+- 成绩提交：应用层限流，同一用户间隔不少于 5 秒

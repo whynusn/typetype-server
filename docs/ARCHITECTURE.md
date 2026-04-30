@@ -1,28 +1,28 @@
-# TypeType Server Architecture
+# TypeType 后端架构
 
-Self-contained reference for the backend architecture. Each module section is independently readable.
+后端架构的自包含参考。每个模块章节可独立阅读。
 
-**Stack**: Spring Boot 3.2.5 / Java 21 / MyBatis 3.0.3 / MySQL / Flyway / JWT (jjwt 0.12.6)
+**技术栈**: Spring Boot 3.2.5 / Java 21 / MyBatis 3.0.3 / MySQL / Flyway / JWT (jjwt 0.12.6)
 
 ---
 
-## Package Structure
+## 包结构
 
 ```
 com.typetype
-├── common/           Shared infrastructure
-│   ├── config/       SecurityConfig (Spring Security filter chain)
-│   ├── exception/    GlobalExceptionHandler, BusinessException
-│   ├── filter/       RateLimitFilter (Bucket4j)
-│   ├── result/       Result<T>, PageResult<T>, ResultCode
+├── common/           共享基础设施
+│   ├── config/       SecurityConfig（Spring Security 过滤链）
+│   ├── exception/    GlobalExceptionHandler、BusinessException
+│   ├── filter/       RateLimitFilter（Bucket4j 限流）
+│   ├── result/       Result<T>、PageResult<T>、ResultCode
 │   └── util/         SecurityUtils
-├── auth/             Authentication (JWT)
-│   ├── config/       JwtProperties, JwtAuthenticationEntryPoint
+├── auth/             认证模块（JWT）
+│   ├── config/       JwtProperties、JwtAuthenticationEntryPoint
 │   ├── controller/   AuthController
-│   ├── dto/          RegisterDTO, LoginDTO, TokenVO, JwtPayloadDTO
+│   ├── dto/          RegisterDTO、LoginDTO、TokenVO、JwtPayloadDTO
 │   ├── filter/       JwtAuthenticationFilter
-│   └── service/      AuthService, JwtService
-├── user/             User management
+│   └── service/      AuthService、JwtService
+├── user/             用户模块
 │   ├── constant/     UserRole
 │   ├── controller/   UserController
 │   ├── converter/    UserConverter
@@ -30,16 +30,16 @@ com.typetype
 │   ├── entity/       User
 │   ├── mapper/       UserMapper
 │   └── service/      UserService
-├── text/             Typing text management
+├── text/             文本模块
 │   ├── controller/   TextController
-│   ├── dto/          UploadTextDTO, FetchedTextDTO
-│   ├── entity/       Text, TextSource
-│   ├── mapper/       TextMapper, TextSourceMapper
-│   ├── service/      TextService, TextFetchService, SaiWenTextFetcher
+│   ├── dto/          UploadTextDTO、FetchedTextDTO
+│   ├── entity/       Text、TextSource
+│   ├── mapper/       TextMapper、TextSourceMapper
+│   ├── service/      TextService、TextFetchService、SaiWenTextFetcher
 │   └── task/         DailyJisubeiFetchTask
-└── score/            Score/leaderboard management
+└── score/            成绩模块
     ├── controller/   ScoreController
-    ├── dto/          SubmitScoreDTO, ScoreVO, LeaderboardVO
+    ├── dto/          SubmitScoreDTO、ScoreVO、LeaderboardVO
     ├── entity/       Score
     ├── mapper/       ScoreMapper
     └── service/      ScoreService
@@ -47,125 +47,125 @@ com.typetype
 
 ---
 
-## Module: auth
+## 模块: auth（认证）
 
-**Responsibility**: User registration, login, JWT token lifecycle.
+**职责**: 用户注册、登录、JWT 令牌生命周期。
 
-**Key classes**:
+**核心类**:
 
-- `JwtService` — Generates/verifies JWT tokens using jjwt 0.12.6. Reuses `JwtParser` instance for performance. Tokens contain: `userId`, `username`, `role`, `tokenType` (access/refresh), `iat`, `exp`, `iss`, `sub`.
+- `JwtService` — 使用 jjwt 0.12.6 生成/校验 JWT。复用 `JwtParser` 实例提升性能。Token 载荷包含：`userId`、`username`、`role`、`tokenType`（access/refresh）、`iat`、`exp`、`iss`、`sub`。
 
-- `JwtAuthenticationFilter` — `OncePerRequestFilter`. Extracts Bearer token from `Authorization` header, validates it, builds `UsernamePasswordAuthenticationToken` with `ROLE_`-prefixed authorities, sets it in `SecurityContext`.
+- `JwtAuthenticationFilter` — `OncePerRequestFilter`。从 `Authorization` 头提取 Bearer token，校验后构建 `UsernamePasswordAuthenticationToken`（角色前缀 `ROLE_`），设置到 `SecurityContext`。
 
-- `AuthService` — Business logic: register (BCrypt + duplicate check), login (credential validation + token pair), refresh (token rotation), logout (revocation stubs for Redis).
+- `AuthService` — 业务逻辑：注册（BCrypt + 重复检查）、登录（凭证校验 + token 对生成）、刷新（令牌轮换）、登出（撤销桩，预留给 Redis）。
 
-**Auth flow**: Client → login → gets accessToken + refreshToken → uses accessToken in header → on 401, uses refreshToken to get new pair (rotation).
-
----
-
-## Module: user
-
-**Responsibility**: User profile CRUD.
-
-**Key classes**:
-
-- `UserMapper` — MyBatis mapper for t_user. Methods: `findById`, `findByUsername`, `insert`.
-
-- `UserService` — Validates credentials, delegates to mapper.
-
-- `UserController` — `GET /users/me` (current user from SecurityContext), `GET /users/{id}` (ADMIN only).
-
-**Roles**: `USER` (default), `ADMIN`. Defined in `UserRole` constants.
+**认证流程**: 客户端 → 登录 → 获得 accessToken + refreshToken → 请求携带 accessToken → 收到 401 时用 refreshToken 换取新 token 对（轮换）。
 
 ---
 
-## Module: text
+## 模块: user（用户）
 
-**Responsibility**: Text CRUD, text source catalog, external API fetching, scheduled tasks.
+**职责**: 用户资料 CRUD。
 
-**Key classes**:
+**核心类**:
 
-- `TextService` — Core business logic: catalog listing, random text (offset-based, avoids `ORDER BY RAND()`), latest text, upload with server-computed `clientTextId`.
+- `UserMapper` — t_user 的 MyBatis mapper。方法：`findById`、`findByUsername`、`insert`。
 
-- `TextFetchService` — Fetches texts from SaiWen external API. Computes `clientTextId` via `SHA-256(sourceKey:content)` → first 8 hex chars → decimal mod 10^9. Deduplicates by title.
+- `UserService` — 凭证校验，委托 mapper 操作。
 
-- `SaiWenTextFetcher` — HTTP client for SaiWen API (`https://api.saiwenshu.com/api/article`).
+- `UserController` — `GET /users/me`（从 SecurityContext 获取当前用户）、`GET /users/{id}`（仅 ADMIN）。
 
-- `DailyJisubeiFetchTask` — `@Scheduled(fixedDelay=10min)`. Fetches Jisubei articles between 06:00–23:59. Uses `volatile` flags for concurrency guard and date-based dedup (no distributed lock needed for single-instance).
-
-- `TextController` — 7 endpoints: catalog, random, latest, by-id, by-source, by-client-text-id, upload (ADMIN).
-
-**External dependency**: SaiWen API for article fetching. Failure is logged and retried on next cycle.
+**角色**: `USER`（默认）、`ADMIN`。定义在 `UserRole` 常量中。
 
 ---
 
-## Module: score
+## 模块: text（文本）
 
-**Responsibility**: Score submission, leaderboard, history, best-score queries.
+**职责**: 文本 CRUD、文本来源目录、外部 API 抓取、定时任务。
 
-**Key classes**:
+**核心类**:
 
-- `Score` — Entity with V2 metrics. **Only stores raw fields** in the database (charCount, wrongCharCount, backspaceCount, correctionCount, keyStrokeCount, time). All derived metrics (speed, keyStroke, codeLength, keyAccuracy, effectiveSpeed) are computed via getter methods on the entity — the single source of truth for metric calculations.
+- `TextService` — 核心业务：目录列表、随机文本（offset 策略，避免 `ORDER BY RAND()`）、最新文本、上传时服务端计算 `clientTextId`。
 
-- `ScoreService` — Submit score (5-second cooldown), leaderboard (one entry per user, ranked by speed), user history, best score. Converts `Score` entity → `ScoreVO` via `toScoreVO()` which calls entity getters.
+- `TextFetchService` — 从赛文 API 抓取文本。通过 `SHA-256(sourceKey:content)` → 前 8 位十六进制 → 十进制 mod 10^9 计算 `clientTextId`。按标题去重。
 
-- `ScoreMapper` — MyBatis mapper with inline SQL. Key queries: `insert` (V2 raw fields only), `findLeaderboardByTextId` (subquery + ranking), `findBestScore`, `findByUserId`.
+- `SaiWenTextFetcher` — 赛文 API HTTP 客户端（`https://api.saiwenshu.com/api/article`）。
 
-- `ScoreController` — 5 endpoints: submit, user history, user text history, leaderboard, best.
+- `DailyJisubeiFetchTask` — `@Scheduled(fixedDelay=10min)`。每天 06:00–23:59 自动抓取极速杯文章。使用 `volatile` 标志位做并发防护和日期去重（单实例无需分布式锁）。
 
-**Data flow for score submission**:
+- `TextController` — 7 个端点：目录、随机、最新、按 ID、按来源、按 clientTextId、上传（ADMIN）。
+
+**外部依赖**: 赛文 API 用于文章抓取。失败记录日志，下一周期重试。
+
+---
+
+## 模块: score（成绩）
+
+**职责**: 成绩提交、排行榜、历史记录、最佳成绩查询。
+
+**核心类**:
+
+- `Score` — V2 指标集实体。**数据库仅存储原始字段**（charCount、wrongCharCount、backspaceCount、correctionCount、keyStrokeCount、time）。所有派生指标（speed、keyStroke、codeLength、keyAccuracy、effectiveSpeed）通过实体 getter 方法计算 — 是指标计算的唯一数据源。
+
+- `ScoreService` — 提交成绩（5 秒冷却）、排行榜（每用户一条最高速度记录，按速度降序）、用户历史、最佳成绩。通过 `toScoreVO()` 调用实体 getter 将 Score → ScoreVO。
+
+- `ScoreMapper` — 内联 SQL 的 MyBatis mapper。关键查询：`insert`（仅 V2 原始字段）、`findLeaderboardByTextId`（子查询 + 排名）、`findBestScore`、`findByUserId`。
+
+- `ScoreController` — 5 个端点：提交、用户历史、用户文本历史、排行榜、最佳成绩。
+
+**成绩提交数据流**:
 ```
-Client sends raw fields → SubmitScoreDTO → ScoreService validates
-→ Score.builder() creates entity → ScoreMapper.insert() stores raw fields
-→ Derived metrics never touch the database
-```
-
-**Data flow for leaderboard query**:
-```
-ScoreMapper.findLeaderboardByTextId() computes derived metrics
-in SQL (ROUND expressions) → maps to LeaderboardVO
+客户端发送原始字段 → SubmitScoreDTO → ScoreService 校验
+→ Score.builder() 构建实体 → ScoreMapper.insert() 存储原始字段
+→ 派生指标不落库
 ```
 
----
-
-## Module: common
-
-**Responsibility**: Shared infrastructure used by all modules.
-
-- `SecurityConfig` — Spring Security filter chain. Disables CSRF, enables CORS. JWT filter before `UsernamePasswordAuthenticationFilter`. BCrypt password encoder. Public endpoints: `/api/v1/auth/**`.
-
-- `RateLimitFilter` — Bucket4j per-IP rate limiting for auth endpoints. Login: 10/min, register: 5/min, other: 20/min.
-
-- `GlobalExceptionHandler` — `@RestControllerAdvice`. Catches `BusinessException`, validation errors (`MethodArgumentNotValidException`), and generic `RuntimeException`. Returns `Result<T>` with appropriate error codes.
-
-- `Result<T>` — Unified response envelope: `{code, message, data, timestamp}`.
-
-- `PageResult<T>` — Paginated response: `{records, total, page, size, pages}`.
-
-- `SecurityUtils` — Static helper to extract `userId` from `SecurityContext`.
+**排行榜查询数据流**:
+```
+ScoreMapper.findLeaderboardByTextId() 在 SQL 中通过 ROUND 表达式
+计算派生指标 → 映射到 LeaderboardVO
+```
 
 ---
 
-## Configuration
+## 模块: common（公共）
 
-**Profiles**: `default` (dev), `dev`, `prod`
+**职责**: 所有模块共享的基础设施。
 
-| Setting | Value | Source |
-|---------|-------|--------|
-| Server port | 8080 | application.yml |
+- `SecurityConfig` — Spring Security 过滤链。禁用 CSRF，启用 CORS。JWT 过滤器在 `UsernamePasswordAuthenticationFilter` 之前。BCrypt 密码编码器。公开端点：`/api/v1/auth/**`。
+
+- `RateLimitFilter` — Bucket4j 按 IP 限流（认证端点）。登录 10 次/分，注册 5 次/分，其他 20 次/分。
+
+- `GlobalExceptionHandler` — `@RestControllerAdvice`。捕获 `BusinessException`、参数校验错误（`MethodArgumentNotValidException`）、通用 `RuntimeException`，返回 `Result<T>` 格式的错误响应。
+
+- `Result<T>` — 统一响应信封：`{code, message, data, timestamp}`。
+
+- `PageResult<T>` — 分页响应：`{records, total, page, size, pages}`。
+
+- `SecurityUtils` — 从 `SecurityContext` 提取 `userId` 的静态工具类。
+
+---
+
+## 配置
+
+**环境**: `default`（开发）、`dev`、`prod`
+
+| 配置项 | 值 | 来源 |
+|--------|-----|------|
+| 服务端口 | 8080 | application.yml |
 | MySQL | localhost:3306/typetype | application.yml |
-| JWT secret | env `JWT_SECRET_KEY` | application.yml |
-| JWT access TTL | 15 min | application.yml |
-| JWT refresh TTL | 7 days | application.yml |
-| Flyway | enabled, auto-migrate on startup | application.yml |
-| Redis | commented out (MVP stage) | pom.xml |
+| JWT 密钥 | 环境变量 `JWT_SECRET_KEY` | application.yml |
+| JWT access TTL | 15 分钟 | application.yml |
+| JWT refresh TTL | 7 天 | application.yml |
+| Flyway | 启用，启动时自动迁移 | application.yml |
+| Redis | 已注释（MVP 阶段） | pom.xml |
 
 ---
 
-## External Integrations
+## 外部集成
 
-| Service | Purpose | Failure Mode |
-|---------|---------|--------------|
-| SaiWen API | Fetch daily Jisubei articles | Logged, retried next cycle |
-| MySQL | Persistent storage | App fails to start |
-| Redis | (Planned) Token revocation, caching | Not yet integrated |
+| 服务 | 用途 | 失败处理 |
+|------|------|----------|
+| 赛文 API | 每日抓取极速杯文章 | 记录日志，下一周期重试 |
+| MySQL | 持久化存储 | 应用启动失败 |
+| Redis | （计划中）令牌撤销、缓存 | 尚未集成 |
