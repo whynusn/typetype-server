@@ -115,8 +115,7 @@ Flyway 迁移 V1–V8 管理的 MySQL schema 自包含参考。
 | V4 | 排行榜性能索引 |
 | V5 | 新增 custom 文本来源 |
 | V6 | t_text 新增 `client_text_id` 列 |
-| V7 | t_score 新增 V2 原始字段（charCount 等），回填历史数据 |
-| V8 | t_score 删除所有旧派生字段（speed、keyStroke 等） |
+| V9 | V2 指标集迁移（幂等安全版）：添加原始字段、回填历史、删除旧派生字段、添加索引 |
 
 ---
 
