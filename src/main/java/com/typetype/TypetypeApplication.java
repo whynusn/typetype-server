@@ -2,6 +2,7 @@ package com.typetype;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * TypeType Server 启动类
@@ -17,6 +18,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * - 包扫描：默认扫描启动类所在包及其子包
  */
 @SpringBootApplication
+@EnableScheduling
 public class TypetypeApplication {
 
     /**
