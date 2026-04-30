@@ -1,5 +1,10 @@
 # TypeType Server API Documentation
 
+> **Decoupled docs available:**
+> - [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) — Pure API contract with request/response JSON
+> - [`docs/DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md) — Database schema and migrations
+> - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — Module structure and data flow
+
 ## Table of Contents
 1. [API Overview](#api-overview)
 2. [Authentication Endpoints](#authentication-endpoints)
@@ -290,26 +295,18 @@
 | title | String | Article title |
 | content | String | Article content |
 
-#### SubmitScoreDTO (V2)
+#### SubmitScoreDTO (V2 — raw fields only)
 | Field | Type | Validation | Description |
 |-------|------|------------|-------------|
-| textId | Long | Optional | Text ID |
-| speed | BigDecimal | Required, >= 0 | Speed (chars/min) |
-| keyStroke | BigDecimal | Required, >= 0 | Keystrokes per second |
-| codeLength | BigDecimal | Required, >= 0 | Code length (keystrokes/char) |
-| charCount | Integer | Required, >= 0 | Character count |
-| wrongCharCount | Integer | Required, >= 0 | Wrong character count |
+| textId | Long | Optional | Server text ID |
+| charCount | Integer | Required, >= 0 | Characters in the text |
+| wrongCharCount | Integer | Required, >= 0 | Incorrectly typed characters |
 | backspaceCount | Integer | Required, >= 0 | Backspace key presses |
-| correctionCount | Integer | Required, >= 0 | Corrected character count |
-| keyAccuracy | BigDecimal | Required, 0-100 | Key accuracy percentage |
-| time | BigDecimal | Required, >= 0 | Duration (seconds) |
+| correctionCount | Integer | Required, >= 0 | Characters corrected via backspace-then-retype |
+| keyStrokeCount | Integer | Required, >= 0 | Total key presses |
+| time | BigDecimal | Required, >= 0 | Duration in seconds |
 
-**Deprecated Fields (for backward compatibility):**
-| Field | Type | Description | Replaced By |
-|-------|------|-------------|-------------|
-| accuracyRate | BigDecimal | Accuracy percentage | Derived from charCount/wrongCharCount |
-| effectiveSpeed | BigDecimal | Effective speed (chars/min) | Derived from speed/accuracyRate |
-| duration | BigDecimal | Duration (seconds) | `time` |
+Derived metrics (speed, keyStroke, codeLength, keyAccuracy, effectiveSpeed) are computed server-side by Score entity getters — clients must NOT send them.
 
 ### VOs (View Objects)
 
@@ -399,25 +396,25 @@
 | isActive | Boolean | Is active |
 | createdAt | LocalDateTime | Creation time |
 
-#### Score (V2)
-| Field | Type | Description |
-|-------|------|-------------|
-| id | Long | Score ID (PK) |
-| userId | Long | User ID (FK to t_user) |
-| textId | Long | Text ID (FK to t_text, optional) |
-| speed | BigDecimal | Speed (chars/min) |
-| keyStroke | BigDecimal | Keystrokes per second |
-| codeLength | BigDecimal | Code length |
-| charCount | Integer | Character count |
-| wrongCharCount | Integer | Wrong character count |
-| backspaceCount | Integer | Backspace key presses |
-| correctionCount | Integer | Corrected character count |
-| keyAccuracy | BigDecimal | Key accuracy percentage |
-| time | BigDecimal | Duration (seconds) |
-| effectiveSpeed | BigDecimal | Effective speed (chars/min) (derived/compatibility) |
-| accuracyRate | BigDecimal | Accuracy percentage (derived/compatibility) |
-| createdAt | LocalDateTime | Creation time |
-| textTitle | String | Text title (joined field, not in DB) |
+#### Score (V2 — raw fields stored in DB, derived fields computed at runtime)
+| Field | Type | Storage | Description |
+|-------|------|---------|-------------|
+| id | Long | DB | Score ID (PK) |
+| userId | Long | DB | User ID (FK to t_user) |
+| textId | Long | DB | Text ID (FK to t_text, nullable) |
+| charCount | Integer | DB | Characters in the text |
+| wrongCharCount | Integer | DB | Incorrectly typed characters |
+| backspaceCount | Integer | DB | Backspace key presses |
+| correctionCount | Integer | DB | Characters corrected via backspace-then-retype |
+| keyStrokeCount | Integer | DB | Total key presses |
+| time | BigDecimal | DB | Duration in seconds |
+| createdAt | LocalDateTime | DB | Creation time |
+| textTitle | String | JOIN | Text title (from t_text, not in t_score) |
+| speed | BigDecimal | computed | `charCount * 60 / time` |
+| keyStroke | BigDecimal | computed | `keyStrokeCount / time` |
+| codeLength | BigDecimal | computed | `keyStrokeCount / charCount` |
+| keyAccuracy | BigDecimal | computed | Key accuracy percentage |
+| effectiveSpeed | BigDecimal | computed | `(charCount - wrongCharCount) * 60 / time` |
 
 ### Common Response Wrappers
 
@@ -480,14 +477,15 @@ Authorization: Bearer {accessToken}
 
 ## Additional Notes
 
-1. **Database**: MySQL with MyBatis ORM
-2. **Migrations**: Flyway manages database schema changes
-3. **Password Storage**: BCrypt with strength 10
-4. **Validation**: Jakarta Bean Validation with custom error handling
-5. **Error Handling**: Global exception handler returns standardized error responses
+1. **Database**: MySQL with MyBatis ORM, Flyway migrations V1–V8
+2. **Password Storage**: BCrypt
+3. **Validation**: Jakarta Bean Validation + `GlobalExceptionHandler`
+4. **Error Handling**: Unified `Result<T>` envelope with business error codes
+5. **Score V2 contract**: Clients send raw fields only; derived metrics (speed, keyStroke, codeLength, keyAccuracy, effectiveSpeed) computed server-side
 
 ### API Versioning
-All endpoints are under `/api/v1/` prefix for future versioning support.
+All endpoints are under `/api/v1/` prefix.
 
 ### Rate Limiting
-Score submission has built-in frequency protection (`SCORE_SUBMIT_TOO_FREQUENT` error code).
+- Auth endpoints: Bucket4j per-IP (login 10/min, register 5/min)
+- Score submission: 5-second cooldown per user (`SCORE_SUBMIT_TOO_FREQUENT`)
