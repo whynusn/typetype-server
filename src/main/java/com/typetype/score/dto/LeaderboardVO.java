@@ -63,11 +63,6 @@ public class LeaderboardVO {
     private BigDecimal codeLength;
 
     /**
-     * 准确率（%）
-     */
-    private BigDecimal accuracyRate;
-
-    /**
      * 字符数
      */
     private Integer charCount;
@@ -78,9 +73,24 @@ public class LeaderboardVO {
     private Integer wrongCharCount;
 
     /**
-     * 时长（秒）
+     * 键准（%）
      */
-    private BigDecimal duration;
+    private BigDecimal keyAccuracy;
+
+    /**
+     * 退格键按下次数
+     */
+    private Integer backspaceCount;
+
+    /**
+     * 回改字数
+     */
+    private Integer correctionCount;
+
+    /**
+     * 用时（秒）
+     */
+    private BigDecimal time;
 
     /**
      * 达成时间

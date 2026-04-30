@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -34,7 +35,10 @@ public class ScoreService {
     private final TextService textService;
 
     /**
-     * 提交成绩
+     * 提交成绩（V2 纯原始字段合约）
+     *
+     * 客户端只传原始字段，所有派生指标（speed, keyStroke, codeLength, accuracyRate, keyAccuracy）
+     * 由服务端实体 getter 统一计算，确保全栈指标一致。
      *
      * @param dto 成绩数据
      */
@@ -61,18 +65,16 @@ public class ScoreService {
         Score score = Score.builder()
             .userId(userId)
             .textId(textId)
-            .speed(dto.getSpeed())
-            .effectiveSpeed(dto.getEffectiveSpeed())
-            .keyStroke(dto.getKeyStroke())
-            .codeLength(dto.getCodeLength())
-            .accuracyRate(dto.getAccuracyRate())
             .charCount(dto.getCharCount())
             .wrongCharCount(dto.getWrongCharCount())
-            .duration(dto.getDuration())
+            .backspaceCount(dto.getBackspaceCount())
+            .correctionCount(dto.getCorrectionCount())
+            .keyStrokeCount(dto.getKeyStrokeCount())
+            .time(dto.getTime())
             .build();
 
         scoreMapper.insert(score);
-        log.info("用户 {} 提交成绩成功，文本ID: {}, 速度: {}", userId, textId, dto.getSpeed());
+        log.info("用户 {} 提交成绩成功，文本ID: {}, 字符数: {}", userId, textId, dto.getCharCount());
     }
 
     /**
@@ -176,6 +178,9 @@ public class ScoreService {
 
     /**
      * 转换为 ScoreVO
+     *
+     * 派生字段直接调用 Score 实体的 getter 方法，
+     * 确保计算逻辑在整个服务层的单一数据源。
      */
     private ScoreVO toScoreVO(Score score) {
         return ScoreVO.builder()
@@ -183,13 +188,15 @@ public class ScoreService {
             .textId(score.getTextId())
             .textTitle(score.getTextTitle())
             .speed(score.getSpeed())
-            .effectiveSpeed(score.getEffectiveSpeed())
             .keyStroke(score.getKeyStroke())
             .codeLength(score.getCodeLength())
-            .accuracyRate(score.getAccuracyRate())
             .charCount(score.getCharCount())
             .wrongCharCount(score.getWrongCharCount())
-            .duration(score.getDuration())
+            .keyAccuracy(score.getKeyAccuracy())
+            .backspaceCount(score.getBackspaceCount())
+            .correctionCount(score.getCorrectionCount())
+            .time(score.getTime())
+            .effectiveSpeed(score.getEffectiveSpeed())
             .createdAt(score.getCreatedAt())
             .build();
     }

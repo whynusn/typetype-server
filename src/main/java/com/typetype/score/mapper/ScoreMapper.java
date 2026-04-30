@@ -18,17 +18,17 @@ import java.util.List;
 public interface ScoreMapper {
 
     /**
-     * 插入成绩记录
+     * 插入成绩记录（V2 纯原始字段）
      *
      * @param score 成绩实体
      */
     @Insert("""
-        INSERT INTO t_score (user_id, text_id, speed, effective_speed,
-            key_stroke, code_length, accuracy_rate, char_count,
-            wrong_char_count, duration)
-        VALUES (#{userId}, #{textId}, #{speed}, #{effectiveSpeed},
-            #{keyStroke}, #{codeLength}, #{accuracyRate}, #{charCount},
-            #{wrongCharCount}, #{duration})
+        INSERT INTO t_score (user_id, text_id, char_count,
+            wrong_char_count, backspace_count, correction_count,
+            key_stroke_count, time)
+        VALUES (#{userId}, #{textId}, #{charCount},
+            #{wrongCharCount}, #{backspaceCount}, #{correctionCount},
+            #{keyStrokeCount}, #{time})
         """)
     @Options(useGeneratedKeys = true, keyProperty = "id")
     void insert(Score score);
@@ -42,13 +42,28 @@ public interface ScoreMapper {
      * @return 成绩列表
      */
     @Select("""
-        SELECT s.*, t.title as text_title
+        SELECT s.id, s.user_id, s.text_id, s.char_count, s.wrong_char_count,
+               s.backspace_count, s.correction_count, s.key_stroke_count,
+               s.time, s.created_at, t.title as text_title
         FROM t_score s
         LEFT JOIN t_text t ON s.text_id = t.id
         WHERE s.user_id = #{userId}
         ORDER BY s.created_at DESC
         LIMIT #{offset}, #{limit}
         """)
+    @Results(id = "scoreResult", value = {
+        @Result(property = "id", column = "id"),
+        @Result(property = "userId", column = "user_id"),
+        @Result(property = "textId", column = "text_id"),
+        @Result(property = "charCount", column = "char_count"),
+        @Result(property = "wrongCharCount", column = "wrong_char_count"),
+        @Result(property = "backspaceCount", column = "backspace_count"),
+        @Result(property = "correctionCount", column = "correction_count"),
+        @Result(property = "keyStrokeCount", column = "key_stroke_count"),
+        @Result(property = "time", column = "time"),
+        @Result(property = "createdAt", column = "created_at"),
+        @Result(property = "textTitle", column = "text_title")
+    })
     List<Score> findByUserId(@Param("userId") Long userId,
                              @Param("offset") long offset,
                              @Param("limit") long limit);
@@ -86,10 +101,12 @@ public interface ScoreMapper {
             ranked.effectiveSpeed,
             ranked.keyStroke,
             ranked.codeLength,
-            ranked.accuracyRate,
             ranked.charCount,
             ranked.wrongCharCount,
-            ranked.duration,
+            ranked.keyAccuracy,
+            ranked.backspaceCount,
+            ranked.correctionCount,
+            ranked.time,
             ranked.createdAt
         FROM (
             SELECT
@@ -98,18 +115,28 @@ public interface ScoreMapper {
                 u.username,
                 u.nickname,
                 u.avatar_url AS avatarUrl,
-                s.speed,
-                s.effective_speed AS effectiveSpeed,
-                s.key_stroke AS keyStroke,
-                s.code_length AS codeLength,
-                s.accuracy_rate AS accuracyRate,
+                -- 派生字段：speed = char_count * 60 / time
+                ROUND(s.char_count * 60.0 / s.time, 2) AS speed,
+                -- 派生字段：effectiveSpeed = correctChars * 60 / time
+                ROUND((s.char_count - s.wrong_char_count) * 60.0 / s.time, 2) AS effectiveSpeed,
+                -- 派生字段：keyStroke = key_stroke_count / time
+                ROUND(s.key_stroke_count / s.time, 2) AS keyStroke,
+                -- 派生字段：codeLength = key_stroke_count / char_count
+                ROUND(s.key_stroke_count / s.char_count, 3) AS codeLength,
                 s.char_count AS charCount,
                 s.wrong_char_count AS wrongCharCount,
-                s.duration,
+                -- 派生字段：keyAccuracy = (key_stroke_count - wrongKeys) / key_stroke_count * 100
+                ROUND(
+                    (s.key_stroke_count - (s.backspace_count + s.correction_count * (s.key_stroke_count / s.char_count)))
+                    / s.key_stroke_count * 100,
+                2) AS keyAccuracy,
+                s.backspace_count AS backspaceCount,
+                s.correction_count AS correctionCount,
+                s.time,
                 s.created_at AS createdAt
             FROM (
-                SELECT user_id, MAX(speed) AS max_speed
-                FROM t_score
+                SELECT user_id, ROUND(MAX(s.char_count * 60.0 / s.time), 2) AS max_speed
+                FROM t_score s
                 WHERE text_id = #{textId}
                 GROUP BY user_id
                 ORDER BY max_speed DESC
@@ -119,11 +146,11 @@ public interface ScoreMapper {
                 SELECT MAX(s2.id) FROM t_score s2
                 WHERE s2.user_id = best.user_id
                     AND s2.text_id = #{textId}
-                    AND s2.speed = best.max_speed
+                    AND ROUND(s2.char_count * 60.0 / s2.time, 2) = best.max_speed
             )
             INNER JOIN t_user u ON best.user_id = u.id
             CROSS JOIN (SELECT @rank := #{offset}) r
-            ORDER BY s.speed DESC
+            ORDER BY ROUND(s.char_count * 60.0 / s.time, 2) DESC
         ) ranked
         """)
     List<LeaderboardVO> findLeaderboardByTextId(@Param("textId") Long textId,
@@ -147,9 +174,12 @@ public interface ScoreMapper {
      * @return 最佳成绩，不存在返回 null
      */
     @Select("""
-        SELECT * FROM t_score
+        SELECT id, user_id, text_id, char_count, wrong_char_count,
+               backspace_count, correction_count, key_stroke_count,
+               time, created_at
+        FROM t_score
         WHERE user_id = #{userId} AND text_id = #{textId}
-        ORDER BY speed DESC
+        ORDER BY char_count * 60.0 / time DESC
         LIMIT 1
         """)
     Score findBestScore(@Param("userId") Long userId, @Param("textId") Long textId);
@@ -164,7 +194,10 @@ public interface ScoreMapper {
      * @return 成绩列表
      */
     @Select("""
-        SELECT * FROM t_score
+        SELECT id, user_id, text_id, char_count, wrong_char_count,
+               backspace_count, correction_count, key_stroke_count,
+               time, created_at
+        FROM t_score
         WHERE user_id = #{userId} AND text_id = #{textId}
         ORDER BY created_at DESC
         LIMIT #{offset}, #{limit}
