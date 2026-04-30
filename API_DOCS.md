@@ -167,15 +167,17 @@
 {
   "textId": 123,                    // Optional, server text ID
   "speed": 120.5,                   // Required, speed in chars/min, >= 0
-  "effectiveSpeed": 115.3,          // Required, effective speed in chars/min, >= 0
   "keyStroke": 8.5,                 // Required, keystrokes per second, >= 0
   "codeLength": 2.5,               // Required, code length (keystrokes/char), >= 0
-  "accuracyRate": 98.5,            // Required, accuracy percentage, 0-100
   "charCount": 500,                // Required, total characters, >= 0
   "wrongCharCount": 5,             // Required, wrong characters, >= 0
-  "duration": 120.0                // Required, duration in seconds, >= 0
+  "backspaceCount": 10,            // Required, backspace key presses, >= 0
+  "correctionCount": 3,             // Required, corrected character count, >= 0
+  "keyAccuracy": 98.5,            // Required, key accuracy percentage, 0-100
+  "time": 120.0                    // Required, duration in seconds, >= 0
 }
 ```
+**Compatibility**: Old clients can still send `duration`, `accuracyRate`, and `effectiveSpeed` fields, but they are deprecated.
 - **Response**: `Result<Void>` (success message)
 
 ### 2. Get User Score History
@@ -288,18 +290,26 @@
 | title | String | Article title |
 | content | String | Article content |
 
-#### SubmitScoreDTO
+#### SubmitScoreDTO (V2)
 | Field | Type | Validation | Description |
 |-------|------|------------|-------------|
 | textId | Long | Optional | Text ID |
 | speed | BigDecimal | Required, >= 0 | Speed (chars/min) |
-| effectiveSpeed | BigDecimal | Required, >= 0 | Effective speed (chars/min) |
 | keyStroke | BigDecimal | Required, >= 0 | Keystrokes per second |
 | codeLength | BigDecimal | Required, >= 0 | Code length (keystrokes/char) |
-| accuracyRate | BigDecimal | Required, 0-100 | Accuracy percentage |
 | charCount | Integer | Required, >= 0 | Character count |
 | wrongCharCount | Integer | Required, >= 0 | Wrong character count |
-| duration | BigDecimal | Required, >= 0 | Duration (seconds) |
+| backspaceCount | Integer | Required, >= 0 | Backspace key presses |
+| correctionCount | Integer | Required, >= 0 | Corrected character count |
+| keyAccuracy | BigDecimal | Required, 0-100 | Key accuracy percentage |
+| time | BigDecimal | Required, >= 0 | Duration (seconds) |
+
+**Deprecated Fields (for backward compatibility):**
+| Field | Type | Description | Replaced By |
+|-------|------|-------------|-------------|
+| accuracyRate | BigDecimal | Accuracy percentage | Derived from charCount/wrongCharCount |
+| effectiveSpeed | BigDecimal | Effective speed (chars/min) | Derived from speed/accuracyRate |
+| duration | BigDecimal | Duration (seconds) | `time` |
 
 ### VOs (View Objects)
 
@@ -313,23 +323,26 @@
 | createdAt | LocalDateTime | Creation time |
 | updatedAt | LocalDateTime | Update time |
 
-#### ScoreVO
+#### ScoreVO (V2)
 | Field | Type | Description |
 |-------|------|-------------|
 | id | Long | Score ID |
 | textId | Long | Text ID |
 | textTitle | String | Text title |
 | speed | BigDecimal | Speed (chars/min) |
-| effectiveSpeed | BigDecimal | Effective speed (chars/min) |
 | keyStroke | BigDecimal | Keystrokes per second |
 | codeLength | BigDecimal | Code length |
-| accuracyRate | BigDecimal | Accuracy percentage |
 | charCount | Integer | Character count |
 | wrongCharCount | Integer | Wrong character count |
-| duration | BigDecimal | Duration (seconds) |
+| backspaceCount | Integer | Backspace key presses |
+| correctionCount | Integer | Corrected character count |
+| keyAccuracy | BigDecimal | Key accuracy percentage |
+| time | BigDecimal | Duration (seconds) |
+| accuracyRate | BigDecimal | Accuracy percentage (derived) |
+| effectiveSpeed | BigDecimal | Effective speed (chars/min) (derived) |
 | createdAt | LocalDateTime | Creation time |
 
-#### LeaderboardVO
+#### LeaderboardVO (V2)
 | Field | Type | Description |
 |-------|------|-------------|
 | rank | Integer | Ranking position |
@@ -338,13 +351,16 @@
 | nickname | String | User nickname |
 | avatarUrl | String | Avatar URL |
 | speed | BigDecimal | Speed (chars/min) |
-| effectiveSpeed | BigDecimal | Effective speed (chars/min) |
 | keyStroke | BigDecimal | Keystrokes per second |
 | codeLength | BigDecimal | Code length |
-| accuracyRate | BigDecimal | Accuracy percentage |
 | charCount | Integer | Character count |
 | wrongCharCount | Integer | Wrong character count |
-| duration | BigDecimal | Duration (seconds) |
+| backspaceCount | Integer | Backspace key presses |
+| correctionCount | Integer | Corrected character count |
+| keyAccuracy | BigDecimal | Key accuracy percentage |
+| time | BigDecimal | Duration (seconds) |
+| accuracyRate | BigDecimal | Accuracy percentage (derived) |
+| effectiveSpeed | BigDecimal | Effective speed (chars/min) (derived) |
 | createdAt | LocalDateTime | Achievement time |
 
 ### Entities
@@ -383,20 +399,23 @@
 | isActive | Boolean | Is active |
 | createdAt | LocalDateTime | Creation time |
 
-#### Score
+#### Score (V2)
 | Field | Type | Description |
 |-------|------|-------------|
 | id | Long | Score ID (PK) |
 | userId | Long | User ID (FK to t_user) |
 | textId | Long | Text ID (FK to t_text, optional) |
 | speed | BigDecimal | Speed (chars/min) |
-| effectiveSpeed | BigDecimal | Effective speed (chars/min) |
 | keyStroke | BigDecimal | Keystrokes per second |
 | codeLength | BigDecimal | Code length |
-| accuracyRate | BigDecimal | Accuracy percentage |
 | charCount | Integer | Character count |
 | wrongCharCount | Integer | Wrong character count |
-| duration | BigDecimal | Duration (seconds) |
+| backspaceCount | Integer | Backspace key presses |
+| correctionCount | Integer | Corrected character count |
+| keyAccuracy | BigDecimal | Key accuracy percentage |
+| time | BigDecimal | Duration (seconds) |
+| effectiveSpeed | BigDecimal | Effective speed (chars/min) (derived/compatibility) |
+| accuracyRate | BigDecimal | Accuracy percentage (derived/compatibility) |
 | createdAt | LocalDateTime | Creation time |
 | textTitle | String | Text title (joined field, not in DB) |
 

@@ -186,19 +186,23 @@ CREATE TABLE t_text (
     INDEX idx_source_difficulty (source_id, difficulty)
 );
 
--- 成绩表
+-- 成绩表（V2：新增键准、退格、回改、time 字段）
 CREATE TABLE t_score (
     id                BIGINT PRIMARY KEY AUTO_INCREMENT,
     user_id           BIGINT NOT NULL,
     text_id           BIGINT,                   -- 可选，关联练习的文本
     speed             DECIMAL(8,2) NOT NULL,     -- 字/分
-    effective_speed   DECIMAL(8,2) NOT NULL,
     key_stroke        DECIMAL(8,2) NOT NULL,     -- 击/秒
     code_length       DECIMAL(8,4) NOT NULL,     -- 击/字
-    accuracy_rate     DECIMAL(5,2) NOT NULL,     -- 准确率 %
     char_count        INT NOT NULL,
     wrong_char_count  INT NOT NULL,
-    duration          DECIMAL(10,2) NOT NULL,    -- 秒
+    key_accuracy      DECIMAL(5,2) NOT NULL DEFAULT 100.00,  -- 键准 %
+    backspace_count   INT NOT NULL DEFAULT 0,     -- 退格键按下次数
+    correction_count  INT NOT NULL DEFAULT 0,     -- 回改字数
+    time              DECIMAL(10,2) NOT NULL DEFAULT 0,   -- 用时（秒）
+    effective_speed   DECIMAL(8,2),               -- 有效速度（派生/兼容）
+    accuracy_rate     DECIMAL(5,2),               -- 准确率（派生/兼容）
+    duration          DECIMAL(10,2),              -- 时长（兼容）
     created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES t_user(id),
     INDEX idx_user_created (user_id, created_at DESC),
@@ -355,20 +359,21 @@ GET    /api/v1/users/me/stats        # 个人统计概览
 #### POST /api/v1/scores
 
 ```json
-// Request (需要 Authorization: Bearer <token>)
+// Request (V2，需要 Authorization: Bearer <token>)
 {
   "textId": 42,
   "speed": 123.45,
-  "effectiveSpeed": 120.18,
   "keyStroke": 6.7,
   "codeLength": 2.15,
-  "accuracyRate": 97.35,
   "charCount": 200,
   "wrongCharCount": 5,
-  "duration": 97.56
+  "backspaceCount": 10,
+  "correctionCount": 3,
+  "keyAccuracy": 98.5,
+  "time": 97.56
 }
 
-// Response 201
+// Response 200
 {
   "code": 200,
   "data": {
@@ -378,6 +383,8 @@ GET    /api/v1/users/me/stats        # 个人统计概览
   }
 }
 ```
+
+**Note**: `effectiveSpeed`、`accuracyRate`、`duration` 字段已废弃，服务端从原始字段计算派生值。旧客户端仍可发送这些字段以保持兼容。
 
 #### GET /api/v1/users/me/stats
 
@@ -467,11 +474,11 @@ public Text getRandomText(String sourceKey) {
 public Result<ScoreVO> submitScore(@Valid @RequestBody ScoreSubmitDTO dto) {
     // 1. 基本合理性校验
     if (dto.getSpeed() > 300) throw new BusinessException(40001, "成绩数据异常");
-    if (dto.getAccuracyRate() > 100 || dto.getAccuracyRate() < 0) throw ...;
-    if (dto.getDuration() < 1) throw ...;
+    if (dto.getKeyAccuracy() > 100 || dto.getKeyAccuracy() < 0) throw ...;
+    if (dto.getTime() < 1) throw ...;
 
-    // 2. 交叉校验：speed ≈ charCount * 60 / duration
-    double expectedSpeed = dto.getCharCount() * 60.0 / dto.getDuration();
+    // 2. 交叉校验：speed ≈ charCount * 60 / time
+    double expectedSpeed = dto.getCharCount() * 60.0 / dto.getTime();
     if (Math.abs(expectedSpeed - dto.getSpeed()) > 1.0) throw ...;
 
     // 3. 频率限制：同一用户 5s 内只能提交一次

@@ -689,7 +689,7 @@ score/
     └── ScoreHistoryVO.java
 ```
 
-**ScoreSubmitDTO 校验**：
+**ScoreSubmitDTO 校验（V2）**：
 ```java
 @Data
 public class ScoreSubmitDTO {
@@ -701,24 +701,24 @@ public class ScoreSubmitDTO {
     @DecimalMax(value = "300", message = "速度异常")
     private BigDecimal speed;
 
-    @NotNull(message = "准确率不能为空")
-    @DecimalMin(value = "0", message = "准确率不能小于 0")
-    @DecimalMax(value = "100", message = "准确率不能大于 100")
-    private BigDecimal accuracyRate;
-
     @NotNull(message = "字符数不能为空")
     @Min(value = 1, message = "字符数至少为 1")
     private Integer charCount;
 
+    @NotNull(message = "键准不能为空")
+    @DecimalMin(value = "0", message = "键准不能小于 0")
+    @DecimalMax(value = "100", message = "键准不能大于 100")
+    private BigDecimal keyAccuracy;
+
     @NotNull(message = "时长不能为空")
     @Min(value = 1, message = "时长至少为 1 秒")
-    private BigDecimal duration;
+    private BigDecimal time;
 
-    // ... 其他字段
+    // ... 其他字段：keyStroke, codeLength, wrongCharCount, backspaceCount, correctionCount
 }
 ```
 
-**ScoreService 业务逻辑**：
+**ScoreService 业务逻辑（V2）**：
 ```java
 @Service
 public class ScoreService {
@@ -726,10 +726,10 @@ public class ScoreService {
     public ScoreVO submitScore(ScoreSubmitDTO dto, Long userId) {
         // 1. 基本校验（已在 DTO 中完成）
 
-        // 2. 交叉校验：speed ≈ charCount * 60 / duration
+        // 2. 交叉校验：speed ≈ charCount * 60 / time
         BigDecimal expectedSpeed = dto.getCharCount()
             .multiply(new BigDecimal("60"))
-            .divide(dto.getDuration(), 2, RoundingMode.HALF_UP);
+            .divide(dto.getTime(), 2, RoundingMode.HALF_UP);
 
         if (expectedSpeed.subtract(dto.getSpeed()).abs()
                 .compareTo(new BigDecimal("5")) > 0) {
@@ -750,7 +750,14 @@ public class ScoreService {
             .userId(userId)
             .textId(dto.getTextId())
             .speed(dto.getSpeed())
-            // ... 其他字段
+            .keyStroke(dto.getKeyStroke())
+            .codeLength(dto.getCodeLength())
+            .charCount(dto.getCharCount())
+            .wrongCharCount(dto.getWrongCharCount())
+            .keyAccuracy(dto.getKeyAccuracy())
+            .backspaceCount(dto.getBackspaceCount())
+            .correctionCount(dto.getCorrectionCount())
+            .time(dto.getTime())
             .build();
         scoreMapper.insert(score);
 
