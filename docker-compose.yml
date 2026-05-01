@@ -1,0 +1,58 @@
+# ==================== TypeType 开发环境 ====================
+# 一键启动：docker compose up
+# 停止并清理：docker compose down -v
+
+services:
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: typetype-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: typetype
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: typetype-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Spring Boot 应用
+  app:
+    build: .
+    container_name: typetype-app
+    ports:
+      - "8080:8080"
+    environment:
+      # 数据源配置（指向容器内的 MySQL）
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/typetype?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      # Redis 配置（指向容器内的 Redis）
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      # JWT 密钥（生产环境应从环境变量或配置中心读取）
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-typetype-dev-secret-key-change-in-production}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
