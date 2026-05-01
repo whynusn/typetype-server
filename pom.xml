@@ -29,6 +29,8 @@
     <properties>
         <java.version>21</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- 覆盖 Testcontainers 内部的 docker-java 版本，兼容 Docker 29+ -->
+        <docker-java.version>3.4.0</docker-java.version>
     </properties>
 
     <!-- 依赖管理 -->
@@ -115,13 +117,26 @@
         </dependency>
 
         <!-- ==================== Redis 缓存 ==================== -->
-        <!-- spring-boot-starter-data-redis：Redis 客户端（MVP 后启用） -->
-        <!--
+        <!-- spring-boot-starter-data-redis：Redis 客户端 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
-        -->
+
+        <!-- ==================== API 文档 ==================== -->
+        <!-- springdoc-openapi：自动生成 OpenAPI 3.0 文档 -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.5.0</version>
+        </dependency>
+
+        <!-- ==================== 可观测性 ==================== -->
+        <!-- spring-boot-starter-actuator：健康检查、指标端点 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
 
         <!-- ==================== 开发工具 ==================== -->
         <!-- lombok：简化代码（@Data、@Builder 等） -->
@@ -153,6 +168,40 @@
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- ==================== 集成测试 ==================== -->
+        <!-- Testcontainers：在测试中启动真实 Docker 容器（MySQL、Redis 等） -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <version>1.20.4</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>1.20.4</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>mysql</artifactId>
+            <version>1.20.4</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- 覆盖 docker-java 版本，兼容 Docker 29+ -->
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java</artifactId>
+            <version>${docker-java.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java-transport-httpclient5</artifactId>
+            <version>${docker-java.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

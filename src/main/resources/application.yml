@@ -10,6 +10,13 @@ spring:
     password: whynu
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+  # Redis 配置
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+
   # Flyway 数据库迁移配置
   flyway:
     enabled: true
@@ -40,6 +47,19 @@ logging:
     root: INFO
     com.typetype: DEBUG
     org.springframework.security: DEBUG
+
+# ==================== Actuator 可观测性 ====================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  health:
+    redis:
+      enabled: true
 
 # ==================== JWT 配置 ====================
 jwt:
