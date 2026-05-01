@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Logback 配置文件
+
+  🎓 面试考点：
+  - spring-profile 区分环境：dev 用彩色控制台，prod 用 JSON 文件
+  - %clr() 彩色输出：开发时更易读
+  - %d{HH:mm:ss.SSS} 时间戳：精确到毫秒
+  - %logger{36} 类名缩写：最长36字符
+  - %X{traceId} MDC 变量：分布式追踪的请求ID
+
+  💡 为什么用 logback 而不是 log4j2？
+  - Spring Boot 默认集成 logback，零配置
+  - logback 启动更快，内存占用更小
+  - log4j2 性能更好，但需要额外配置
+-->
+<configuration>
+
+    <!-- ==================== 开发环境 ==================== -->
+    <springProfile name="dev">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <!-- 彩色格式：时间 级别 [traceId] logger: 消息 -->
+                <pattern>%clr(%d{HH:mm:ss.SSS}){faint} %clr(%5p) %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %msg%n</pattern>
+            </encoder>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+
+        <!-- 项目代码 DEBUG -->
+        <logger name="com.typetype" level="DEBUG"/>
+        <!-- SQL 日志 -->
+        <logger name="com.typetype.mapper" level="DEBUG"/>
+        <!-- Spring Security 调试 -->
+        <logger name="org.springframework.security" level="DEBUG"/>
+    </springProfile>
+
+    <!-- ==================== 生产环境 ==================== -->
+    <springProfile name="prod">
+        <!-- 控制台输出（JSON 格式，便于 ELK 收集） -->
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - traceId=%X{traceId} userId=%X{userId} - %msg%n</pattern>
+            </encoder>
+        </appender>
+
+        <!-- 文件输出（按天滚动，保留30天） -->
+        <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>logs/typetype-server.log</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                <fileNamePattern>logs/typetype-server.%d{yyyy-MM-dd}.log</fileNamePattern>
+                <maxHistory>30</maxHistory>
+                <totalSizeCap>1GB</totalSizeCap>
+            </rollingPolicy>
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - traceId=%X{traceId} userId=%X{userId} - %msg%n</pattern>
+            </encoder>
+        </appender>
+
+        <!-- 错误日志单独文件 -->
+        <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>logs/typetype-server-error.log</file>
+            <filter class="ch.qos.logback.classic.filter.LevelFilter">
+                <level>ERROR</level>
+                <onMatch>ACCEPT</onMatch>
+                <onMismatch>DENY</onMismatch>
+            </filter>
+            <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                <fileNamePattern>logs/typetype-server-error.%d{yyyy-MM-dd}.log</fileNamePattern>
+                <maxHistory>30</maxHistory>
+            </rollingPolicy>
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - traceId=%X{traceId} userId=%X{userId} - %msg%n</pattern>
+            </encoder>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+            <appender-ref ref="ERROR_FILE"/>
+        </root>
+
+        <!-- 降低第三方库日志级别 -->
+        <logger name="org.springframework" level="WARN"/>
+        <logger name="org.springframework.security" level="WARN"/>
+        <logger name="org.mybatis" level="WARN"/>
+        <logger name="com.mysql" level="WARN"/>
+    </springProfile>
+
+</configuration>
