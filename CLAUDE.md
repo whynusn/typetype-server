@@ -16,6 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) — 接口契约（请求/响应 JSON 结构）
 - [`docs/DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md) — 数据库 schema 与迁移历史
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — 模块结构与数据流
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — 部署指南（Docker 构建、推送、生产部署）
 
 ## 技术栈
 
