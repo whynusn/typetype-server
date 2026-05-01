@@ -18,6 +18,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
 
 import java.math.BigDecimal;
 
@@ -40,6 +42,9 @@ class ScoreServiceTest {
     @Mock
     private TextService textService;
 
+    @Mock
+    private RedisTemplate<String, Object> redisTemplate;
+
     @InjectMocks
     private ScoreService scoreService;
 
@@ -58,6 +63,11 @@ class ScoreServiceTest {
         // 模拟 SecurityUtils.getCurrentUserId()
         mockedSecurityUtils = mockStatic(SecurityUtils.class);
         mockedSecurityUtils.when(SecurityUtils::getCurrentUserId).thenReturn(1L);
+
+        // Mock RedisTemplate 行为（避免 NullPointerException）
+        @SuppressWarnings("unchecked")
+        ZSetOperations<String, Object> zSetOps = mock(ZSetOperations.class);
+        lenient().when(redisTemplate.opsForZSet()).thenReturn(zSetOps);
     }
 
     @AfterEach
