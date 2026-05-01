@@ -6,6 +6,8 @@ import com.typetype.auth.dto.TokenVO;
 import com.typetype.auth.service.AuthService;
 import com.typetype.common.result.Result;
 import com.typetype.user.dto.UserVO;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -32,6 +34,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
+@Tag(name = "认证模块", description = "用户注册、登录、Token 管理")
 public class AuthController {
 
     private final AuthService authService;
@@ -48,6 +51,7 @@ public class AuthController {
      * - 校验失败由 GlobalExceptionHandler 捕获
      */
     @PostMapping("/register")
+    @Operation(summary = "用户注册", description = "创建新用户账号，需要用户名、密码和确认密码")
     public Result<UserVO> register(@Valid @RequestBody RegisterDTO registerDTO) {
         UserVO userVO = authService.register(registerDTO);
         return Result.success("注册成功", userVO);
@@ -60,6 +64,7 @@ public class AuthController {
      * @return Token 信息（accessToken、refreshToken、用户信息）
      */
     @PostMapping("/login")
+    @Operation(summary = "用户登录", description = "验证用户名密码，返回 accessToken 和 refreshToken")
     public Result<TokenVO> login(@Valid @RequestBody LoginDTO loginDTO) {
         TokenVO tokenVO = authService.login(loginDTO);
         return Result.success("登录成功", tokenVO);
@@ -78,6 +83,7 @@ public class AuthController {
      * @return 新的 Token 信息
      */
     @PostMapping("/refresh")
+    @Operation(summary = "刷新 Token", description = "使用 refreshToken 换取新的 token 对（Token Rotation）")
     public Result<TokenVO> refreshToken(@RequestHeader("Authorization") String authHeader) {
         TokenVO tokenVO = authService.refreshToken(authHeader);
         return Result.success("Token 刷新成功", tokenVO);
@@ -94,6 +100,7 @@ public class AuthController {
      * @return 登出结果
      */
     @PostMapping("/logout")
+    @Operation(summary = "用户登出", description = "撤销 Refresh Token，客户端删除本地 Token")
     public Result<Void> logout(@RequestHeader(value = "Authorization", required = false) String authHeader) {
         authService.logout(authHeader);
         return Result.success("登出成功");

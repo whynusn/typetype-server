@@ -4,6 +4,8 @@ import com.typetype.common.result.Result;
 import com.typetype.common.util.SecurityUtils;
 import com.typetype.user.dto.UserVO;
 import com.typetype.user.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
+@Tag(name = "用户模块", description = "用户信息查询")
 public class UserController {
 
     private final UserService userService;
@@ -40,6 +43,7 @@ public class UserController {
      * @return 用户信息
      */
     @GetMapping("/me")
+    @Operation(summary = "当前用户信息", description = "获取当前已认证用户的信息")
     public Result<UserVO> getCurrentUser() {
         // 从 JWT Token 中获取 userId
         Long userId = SecurityUtils.getCurrentUserId();
@@ -60,6 +64,7 @@ public class UserController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "用户详情", description = "通过 ID 获取用户信息（需要 ADMIN 权限）")
     public Result<UserVO> getUserById(@PathVariable Long id) {
         UserVO userVO = userService.getUserById(id);
         return Result.success(userVO);

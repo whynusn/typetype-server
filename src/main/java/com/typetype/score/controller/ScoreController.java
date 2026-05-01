@@ -7,6 +7,8 @@ import com.typetype.score.dto.LeaderboardVO;
 import com.typetype.score.dto.ScoreVO;
 import com.typetype.score.dto.SubmitScoreDTO;
 import com.typetype.score.service.ScoreService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
+@Tag(name = "成绩模块", description = "成绩提交、排行榜、历史记录")
 public class ScoreController {
 
     private final ScoreService scoreService;
@@ -38,6 +41,7 @@ public class ScoreController {
      * @return 成功响应
      */
     @PostMapping("/scores")
+    @Operation(summary = "提交成绩", description = "提交打字测试成绩，服务端计算所有派生指标")
     public Result<Void> submitScore(@Valid @RequestBody SubmitScoreDTO dto) {
         scoreService.submitScore(dto);
         return Result.success("成绩提交成功");
@@ -51,6 +55,7 @@ public class ScoreController {
      * @return 分页结果
      */
     @GetMapping("/scores/history")
+    @Operation(summary = "用户历史成绩", description = "查询当前用户的所有成绩记录，按时间降序")
     public Result<PageResult<ScoreVO>> getUserHistory(
             @RequestParam(defaultValue = "1") long page,
             @RequestParam(defaultValue = "20") long size) {
@@ -68,6 +73,7 @@ public class ScoreController {
      * @return 分页结果
      */
     @GetMapping("/texts/{textId}/scores")
+    @Operation(summary = "用户文本历史", description = "查询当前用户在指定文本下的成绩历史")
     public Result<PageResult<ScoreVO>> getUserTextHistory(
             @PathVariable Long textId,
             @RequestParam(defaultValue = "1") long page,
@@ -85,6 +91,7 @@ public class ScoreController {
      * @return 排行榜分页结果
      */
     @GetMapping("/texts/{textId}/leaderboard")
+    @Operation(summary = "文本排行榜", description = "查询指定文本的排行榜，每个用户仅保留最高速度")
     public Result<PageResult<LeaderboardVO>> getLeaderboard(
             @PathVariable Long textId,
             @RequestParam(defaultValue = "1") long page,
@@ -100,6 +107,7 @@ public class ScoreController {
      * @return 最佳成绩，不存在返回 null
      */
     @GetMapping("/texts/{textId}/best")
+    @Operation(summary = "最佳成绩", description = "查询当前用户在指定文本下的最佳成绩")
     public Result<ScoreVO> getBestScore(@PathVariable Long textId) {
         ScoreVO best = scoreService.getBestScore(textId);
         return Result.success(best);

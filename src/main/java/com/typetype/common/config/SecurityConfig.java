@@ -88,7 +88,15 @@ public class SecurityConfig {
 
             // 配置请求授权
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/v1/auth/**", "/api/v1/health", "/error").permitAll()
+                .requestMatchers(
+                    "/api/v1/auth/**",
+                    "/api/v1/health",
+                    "/error",
+                    "/swagger-ui/**",
+                    "/v3/api-docs/**",
+                    "/swagger-ui.html",
+                    "/actuator/**"
+                ).permitAll()
                 .anyRequest().authenticated()
             );
 
