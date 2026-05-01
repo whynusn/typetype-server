@@ -14,9 +14,12 @@ import com.typetype.user.service.UserService;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+
+import java.time.Duration;
 
 /**
  * 认证服务
@@ -43,11 +46,14 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class AuthService {
 
+    private static final String REFRESH_TOKEN_PREFIX = "refresh_token:";
+
     private final UserService userService;
     private final JwtService jwtService;
     private final JwtProperties jwtProperties;
     private final BCryptPasswordEncoder passwordEncoder;
     private final UserConverter userConverter;
+    private final StringRedisTemplate redisTemplate;
 
     /**
      * 用户注册
@@ -123,10 +129,10 @@ public class AuthService {
             user.getRole()
         );
 
-        // 4. （生产环境）保存 Refresh Token 到 Redis
-        // String userId = user.getId().toString();
-        // redisTemplate.opsForValue().set("refresh_token:" + userId, refreshToken,
-        //     Duration.ofSeconds(jwtProperties.getRefreshTokenExpire()));
+        // 4. 保存 Refresh Token 到 Redis（支持服务端撤销）
+        String redisKey = REFRESH_TOKEN_PREFIX + user.getId();
+        redisTemplate.opsForValue().set(redisKey, refreshToken,
+            Duration.ofSeconds(jwtProperties.getRefreshTokenExpire()));
 
         log.info("用户 {} 登录成功", user.getUsername());
 
@@ -184,11 +190,13 @@ public class AuthService {
                 "Token 类型错误，需要 Refresh Token");
         }
 
-        // 4. （生产环境）检查 Redis 中是否存在该 Refresh Token
-        // if (!redisTemplate.hasKey("refresh_token:" + payload.getUserId())) {
-        //     throw new BusinessException(ResultCode.TOKEN_INVALID,
-        //         "Refresh Token 已失效");
-        // }
+        // 4. 检查 Redis 中是否存在该 Refresh Token（防止重放攻击）
+        String redisKey = REFRESH_TOKEN_PREFIX + payload.getUserId();
+        String storedToken = redisTemplate.opsForValue().get(redisKey);
+        if (storedToken == null || !storedToken.equals(token)) {
+            throw new BusinessException(ResultCode.TOKEN_INVALID,
+                "Refresh Token 已失效");
+        }
 
         // 5. 生成新的 Access Token
         User user = userService.getUserEntityById(payload.getUserId());
@@ -205,10 +213,9 @@ public class AuthService {
             user.getRole()
         );
 
-        // 7. （生产环境）更新 Redis：删除旧的，保存新的
-        // String userId = payload.getUserId().toString();
-        // redisTemplate.opsForValue().set("refresh_token:" + userId, newRefreshToken,
-        //     Duration.ofSeconds(jwtProperties.getRefreshTokenExpire()));
+        // 7. 更新 Redis：用新的 Refresh Token 替换旧的（Token Rotation）
+        redisTemplate.opsForValue().set(redisKey, newRefreshToken,
+            Duration.ofSeconds(jwtProperties.getRefreshTokenExpire()));
 
         // 8. 查询用户信息（可选，如果需要在返回结果中包含用户信息）
         UserVO userVO = userConverter.toVO(user);
@@ -252,9 +259,9 @@ public class AuthService {
         try {
             JwtPayloadDTO payload = jwtService.verifyToken(token);
 
-            // （生产环境）从 Redis 删除 Refresh Token
-            // String userId = payload.getUserId().toString();
-            // redisTemplate.delete("refresh_token:" + userId);
+            // 从 Redis 删除 Refresh Token（撤销）
+            String redisKey = REFRESH_TOKEN_PREFIX + payload.getUserId();
+            redisTemplate.delete(redisKey);
 
             // （可选）将 Access Token 加入黑名单
             // String cacheKey = "blacklist:token:" + token;

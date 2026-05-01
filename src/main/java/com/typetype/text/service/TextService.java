@@ -10,6 +10,8 @@ import com.typetype.text.mapper.TextMapper;
 import com.typetype.text.mapper.TextSourceMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -26,6 +28,7 @@ public class TextService {
     private final TextFetchService textFetchService;
     private final java.util.Random random = new java.util.Random();
 
+    @Cacheable(cacheNames = "textById", key = "#id")
     public Text getTextEntityById(Long id) {
         Text text = textMapper.findById(id);
         if (text == null) {
@@ -34,6 +37,7 @@ public class TextService {
         return text;
     }
 
+    @Cacheable(cacheNames = "textCatalog", key = "'activeSources'")
     public List<TextSource> getActiveSources() {
         return textSourceMapper.findAllActive();
     }
@@ -100,6 +104,7 @@ public class TextService {
         return text;
     }
 
+    @CacheEvict(cacheNames = "textCatalog", allEntries = true)
     public Text uploadText(UploadTextDTO dto) {
         // 根据 sourceKey 确定来源
         TextSource source;
