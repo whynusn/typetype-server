@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -171,12 +172,17 @@ public class TextService {
     private TextSource getOrCreateCustomSource() {
         TextSource source = textSourceMapper.findCustomSource();
         if (source == null) {
-            source = new TextSource();
-            source.setSourceKey("custom");
-            source.setLabel("自定义文本");
-            source.setCategory("custom");
-            source.setIsActive(true);
-            textSourceMapper.insert(source);
+            try {
+                source = new TextSource();
+                source.setSourceKey("custom");
+                source.setLabel("自定义文本");
+                source.setCategory("custom");
+                source.setIsActive(true);
+                textSourceMapper.insert(source);
+            } catch (DuplicateKeyException e) {
+                // 并发请求导致重复插入，重新查询
+                source = textSourceMapper.findCustomSource();
+            }
         }
         return source;
     }
