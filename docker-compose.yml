@@ -41,7 +41,7 @@ services:
       - "${APP_PORT:-8080}:8080"
     environment:
       # 数据源配置（指向容器内的 MySQL）
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       # Redis 配置（指向容器内的 Redis）
@@ -50,6 +50,8 @@ services:
       SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
       # JWT 密钥
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      # Spring Profile（使用 prod 避免 logback %clr() 在容器中报错）
+      SPRING_PROFILES_ACTIVE: prod
     depends_on:
       mysql:
         condition: service_healthy
