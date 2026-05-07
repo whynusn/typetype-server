@@ -176,4 +176,3 @@ docker compose up -d
 - [`docs/DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md) — 数据库 schema 与迁移历史
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — 模块结构与数据流
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — 部署指南
-- [`docs/INTERVIEW_GUIDE.md`](docs/INTERVIEW_GUIDE.md) — 面试重点与技术原理
