@@ -92,7 +92,7 @@ public interface ScoreMapper {
      */
     @Select("""
         SELECT
-            ranked.rank,
+            ranked.rank_num AS `rank`,
             ranked.userId,
             ranked.username,
             ranked.nickname,
@@ -110,7 +110,7 @@ public interface ScoreMapper {
             ranked.createdAt
         FROM (
             SELECT
-                @rank := @rank + 1 AS rank,
+                @rank := @rank + 1 AS rank_num,
                 best.user_id AS userId,
                 u.username,
                 u.nickname,
